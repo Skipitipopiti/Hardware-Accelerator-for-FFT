@@ -60,6 +60,8 @@ begin
         if arst = '1' then
             rf_out <= (others => (others => '0'));
             rs_out <= (others => '0');
+            r_ar_out <= (others => '0');
+            r_ai_out <= (others => '0');
         elsif rising_edge(clk) then
             -- Scrittura nel register file
             for i in 0 to rf_en'length - 1 loop
