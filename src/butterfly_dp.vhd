@@ -13,8 +13,8 @@ entity butterfly_dp is
         arst     : in  std_logic;
         rf_en    : in  std_logic_vector(0 to 3);
         r_sum_en : in  std_logic;
-        r_ar     : in std_logic
-        r_ais    : in  std_logic;
+        r_ar_en  : in std_logic
+        r_ai_en  : in  std_logic;
         sum_sel  : in  std_logic;  -- '0' per somma, '1' per sottrazione
         A        : in  sfixed(0 downto 1-N);
         B        : in  sfixed(0 downto 1-N);
@@ -71,6 +71,16 @@ begin
             -- Scrittura in Rs
             if rs_en = '1' then
                 rs_out <= rs_in;
+            end if;
+
+            -- Scrittura in R_Ar
+            if r_ar_en = '1' then
+                r_ar_out <= r_ar_in;
+            end if;
+
+            -- Scrittura in R_Ai
+            if r_ai_en = '1' then
+                r_ai_out <= r_ai_in;
             end if;
         end if;
     end process;
