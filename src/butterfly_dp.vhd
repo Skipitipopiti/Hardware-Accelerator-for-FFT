@@ -13,7 +13,7 @@ entity butterfly_dp is
         arst     : in  std_logic;
         rf_en    : in  std_logic_vector(0 to 3);
         r_sum_en : in  std_logic;
-        r_ar_en  : in std_logic
+        r_ar_en  : in  std_logic;
         r_ai_en  : in  std_logic;
         sum_sel  : in  std_logic;  -- '0' per somma, '1' per sottrazione
         A        : in  sfixed(0 downto 1-N);
@@ -27,6 +27,8 @@ end entity butterfly_dp;
 
 -- TODO: SISTEMARE PARALLELISMO DATI E REGISTRI
 architecture Behavioral of butterfly_dp is
+    constant INTERNAL_WIDTH : natural := 2*N + 2;
+
     -- Il register file deve contenere valori con il parallelismo interno massimo
     type rf_t is array (0 to 3) of sfixed;
     signal rf_in  : rf_t;
@@ -47,21 +49,56 @@ architecture Behavioral of butterfly_dp is
     -- TODO: rivedere il parallelismo
     signal mul_in1, mul_in2 : sfixed(0 downto 1-N);
     signal mul_out : sfixed(1 downto 2-2*N);
-    signal mul_shift_out : sfixed(1 downto 1-N);
+    signal mul_shift_out : sfixed(3 downto 1-N);
 
     -- TODO: rivedere il parallelismo
-    signal sum_in1, sum_in1 : sfixed(0 downto 1-N);
+    signal sum_in1, sum_in2 : sfixed(0 downto 1-N);
     signal add_out, sub_out, sum_out : sfixed(1 downto 1-N);
-    signal sum_out_ext : sfixed();
+    signal sum_out_ext : sfixed(0 downto 1-INTERNAL_WIDTH);
 
 begin
+    -- Registers
+    R_SUM: entity work.Reg
+        generic map ( N => INTERNAL_WIDTH )
+        port map (
+            arst => arst,
+            clk  => clk,
+            en   => r_sum_en,
+
+            d_in => std_logic_vector(r_sum_in),
+            sfixed(d_out) => r_sum_out
+        );
+
+    R_AR: entity work.Reg
+        generic map ( N => N )
+        port map (
+            arst => arst,
+            clk  => clk,
+            en   => r_ar_en,
+
+            d_in => std_logic_vector(r_ar_in),
+            sfixed(d_out) => r_ar_out
+        );
+
+    R_AI: entity work.Reg
+        generic map ( N => N )
+        port map (
+            arst => arst,
+            clk  => clk,
+            en   => r_ai_en,
+
+            d_in => std_logic_vector(r_ai_in),
+            sfixed(d_out) => r_ai_out
+        );
+
     process(clk, arst)
     begin
         if arst = '1' then
             rf_out <= (others => (others => '0'));
-            rs_out <= (others => '0');
+            r_sum_out <= (others => '0');
             r_ar_out <= (others => '0');
             r_ai_out <= (others => '0');
+
         elsif rising_edge(clk) then
             -- Scrittura nel register file
             for i in 0 to rf_en'length - 1 loop
@@ -69,32 +106,17 @@ begin
                     rf_out(i) <= rf_in(i);
                 end if;
             end loop;
-
-            -- Scrittura in Rs
-            if rs_en = '1' then
-                rs_out <= rs_in;
-            end if;
-
-            -- Scrittura in R_Ar
-            if r_ar_en = '1' then
-                r_ar_out <= r_ar_in;
-            end if;
-
-            -- Scrittura in R_Ai
-            if r_ai_en = '1' then
-                r_ai_out <= r_ai_in;
-            end if;
         end if;
     end process;
 
     MUL_INST: entity work.Multiplier
         generic map ( N => N )
         port map (
-            clk  => clk,
-            A    => mul_in1,
-            B    => mul_in2,
-            PROD => mul_out,
-            A2   => mult_shift_out
+            clk   => clk,
+            A     => mul_in1,
+            B     => mul_in2,
+            PROD  => mul_out,
+            Two_A => mul_shift_out
         );
 
     -- TODO: rivedere il parallelismo
@@ -119,5 +141,5 @@ begin
 
     sum_out <= add_out when sum_sel = '0' else sub_out;
     sum_out_ext <= resize(sum_out, sum_out_ext'high, sum_out_ext'low);
-    rs_in <= sum_out;
+    r_sum_in <= sum_out;
 end architecture Behavioral;

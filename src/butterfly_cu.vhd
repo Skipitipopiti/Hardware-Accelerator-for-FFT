@@ -22,7 +22,7 @@ entity butterfly_cu is
 end entity butterfly_cu;
 
 -- Implementazione comportamentale con macchina a stati finiti
-architecture Behavioral of butterfly is
+architecture Behavioral of butterfly_cu is
     type step_t is (IDLE, S1, S2, S3, S4, S5, S6);
     type state_t is record
         step : step_t;
@@ -45,7 +45,6 @@ begin
                 step         => IDLE,
                 finish_cycle => '0'
             );
-            rf_out <= (others => (others => '0'));
         elsif rising_edge(clk) then
             current_state <= next_state;
         end if;
@@ -86,13 +85,11 @@ begin
     end process;
 
     -- Operazioni in ogni stato
-    process(current_state, A, B, Wr, Wi)
+    process(current_state, SF_2H_1L)
     begin
         -- Default
-        rf_en  <= (others => '0');
         done   <= '0';
-        Ap     <= (others => '0');
-        Bp     <= (others => '0');
+        rf_en  <= (others => '0');
 
         case current_state.step is
             when IDLE =>
@@ -119,6 +116,6 @@ begin
             when others =>
                 null;
         end case;
-    end
+    end process;
 
 end architecture Behavioral;

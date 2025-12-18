@@ -45,9 +45,9 @@ entity Subtractor is
         B   : in  sfixed(0 downto 1-N);
         SUM : out sfixed(1 downto 1-N)
     );
-end entity Adder;
+end entity Subtractor;
 
-architecture Behavioral of Adder is
+architecture Behavioral of Subtractor is
     signal sum_reg : sfixed(0 downto -N);
 begin
     process(clk)
