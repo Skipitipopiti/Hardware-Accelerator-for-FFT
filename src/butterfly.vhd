@@ -59,6 +59,6 @@ begin
             r_sum_en => r_sum_en,
             r_ar_en  => r_ar_en,
             r_ai_en  => r_ai_en,
-            sum_sel  => sum_sel
+            sel_sum  => sum_sel
         );
 end architecture Behavioral;

@@ -17,7 +17,10 @@ entity butterfly_cu is
         r_sum_en : out std_logic;
         r_ar_en  : out std_logic;
         r_ai_en  : out std_logic;
-        sum_sel  : out std_logic  -- '0' per somma, '1 per sottrazione
+        sel_sum    : out std_logic;  -- '0' per somma, '1 per sottrazione
+        sel_S_or_A : out std_logic;
+        sel_shift  : out std_logic;  -- '0' per moltiplicazione, '1' per shift
+        sel_Ax     : out std_logic   -- '0' per Ar, '1' per Ai
     );
 end entity butterfly_cu;
 
@@ -30,7 +33,7 @@ architecture Behavioral of butterfly_cu is
         -- finish_cycle: flag per capire se manca ancora metà ciclo di calcolo
         -- prima di andare al done
         -- 0 = manca metà ciclo
-        -- 1 = ciclo completo (fine modalità continua)
+        -- 1 = ciclo completo (fine modalit� continua)
         finish_cycle : std_logic;
     end record;
 
@@ -81,6 +84,9 @@ begin
                 end if;
 
                 next_state.finish_cycle <= not start;
+            
+            when others =>
+                next_state.step <= IDLE;
         end case;
     end process;
 
@@ -90,13 +96,22 @@ begin
         -- Default
         done   <= '0';
         rf_en  <= (others => '0');
+        r_sum_en <= '0';
+        r_ar_en  <= '0';
+        r_ai_en  <= '0';
+        sel_sum    <= '0';
+        sel_Ax     <= '0';
+        sel_shift  <= '0';
+        sel_S_or_A <= '0';
 
         case current_state.step is
             when IDLE =>
-                null;
+                r_ar_en <= '1';
+                rf_en(0) <= '1'; -- Br
 
             when S1 =>
-                null;
+                r_ai_en <= '1';
+                rf_en(1) <= '1'; -- Bi
 
             when S2 =>
                 null;

@@ -18,7 +18,7 @@ entity Adder is
 end entity Adder;
 
 architecture Behavioral of Adder is
-    signal sum_reg : sfixed(0 downto -N);
+    signal sum_reg : sfixed(1 downto -N);
 begin
     process(clk)
     begin
@@ -43,21 +43,21 @@ entity Subtractor is
         clk : in  std_logic;
         A   : in  sfixed(0 downto 1-N);
         B   : in  sfixed(0 downto 1-N);
-        SUM : out sfixed(1 downto 1-N)
+        SUB : out sfixed(1 downto 1-N)
     );
 end entity Subtractor;
 
 architecture Behavioral of Subtractor is
-    signal sum_reg : sfixed(0 downto -N);
+    signal sub_reg : sfixed(1 downto -N);
 begin
     process(clk)
     begin
         if rising_edge(clk) then
-            sum_reg <= A - B;
+            sub_reg <= A - B;
         end if;
     end process;
 
-    SUM <= sum_reg;
+    SUB <= sub_reg;
 end architecture Behavioral;
 
 -- Multiplier con due operazioni:
@@ -75,6 +75,7 @@ entity Multiplier is
         clk   : in  std_logic;
         A     : in  sfixed(0 downto 1-N);
         B     : in  sfixed(0 downto 1-N);
+        shift : in  std_logic;
         PROD  : out sfixed(1 downto 2-2*N);
         Two_A : out sfixed(1 downto 1-N)
     );
@@ -87,14 +88,22 @@ architecture Behavioral of Multiplier is
     signal A_times2 : sfixed(1 downto 1-N);
 begin
     process(clk)
+        variable temp_prod : sfixed(1 downto (1 - 2*N));
     begin
         if rising_edge(clk) then
-            prod_reg1 <= A * B;
-            prod_reg2 <= prod_reg1;
+            if shift = '1' then
+                -- sign extension 
+                A_times2 <= shift_left(A, 1);
+            else
+                temp_prod := A * B;
 
-            -- sign extension 
-            -- TODO: controllare
-            A_times2 <= shift_left(A, 1);
+                if temp_prod(1) = '0' and temp_prod(0) = '1' then
+                    -- caso di overflow positivo
+                    prod_reg1 <= ('0', others => '1');
+                else
+                    prod_reg1 <= sfixed(temp_prod(0 downto (1 - 2*N)));
+                end if;
+            end if;
         end if;
     end process;
 
