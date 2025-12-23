@@ -110,3 +110,64 @@ begin
     PROD <= prod_reg2;
     Two_A <= A_times2;
 end architecture Behavioral;
+
+entity ROM_Rounder is 
+    generic ( n : natural; m : natural );  -- n : # bit interi, m : # bit frazionali
+    port (
+        clk      : in  std_logic;
+        cs       : in  std_logic;
+        addr     : in  unsigned( (m + n -1) downto 0);
+        data_out : out unsigned(n-1 downto 0)
+    );
+end entity ROM_Rounder;
+
+architecture Behavioral of ROM_Rounder is
+
+    signal integer_part : unsigned(n -1 downto 0);
+    signal fractional_part : unsigned(m -1 downto 0);
+begin
+
+    integer_part <= addr((m + n -1) downto m);
+    fractional_part <= addr(m -1 downto 0);
+
+    process(clk)
+    variable N_Temp    : unsigned(n - 1 downto 0); -- Valore arrotondato in uscita
+    --flag che mi dicese arrotondare per eccesso o meno
+    variable round_up  : boolean;
+    begin
+        if rising_edge(clk) then
+            if cs = '0' then
+                N_Temp := (others => '0'); 
+            else
+                if fractional_part(m - 1) = '0' then                 -- < 0.5   -> arrotonda x difetto
+                    round_up := false;
+                else
+                if (m > 1) and (fractional_part(m - 2 downto 0) /= 0) then   -- > 0.5   -> arrotonda x eccesso     !!!!! m>1 xkè se m=1 non esistono altri bit che devo controllare
+                        round_up := true;    
+                    else                                             --  = 0.5  ->  vedo se pari o dispari
+                        if integer_part(0) = '1' then              
+                            round_up := true;                        -- dispari -> arrotonda x eccesso
+                        else
+                            round_up := false;                       -- pari    -> arrotonda x difetto
+                        end if;
+                    end if;
+                end if;
+                -- controllo x saturazione
+                if round_up then
+                    if integer_part = (others => '1') then 
+                        N_Temp := integer_part;
+                    else
+                        N_Temp := integer_part + 1;
+                    end if;
+                else
+                    N_Temp := integer_part;
+                end if;
+
+            end if;
+            
+            data_out <= N_Temp;
+            
+        end if;
+    end process;
+    
+end  Behavioral;
