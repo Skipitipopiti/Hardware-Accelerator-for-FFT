@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 use ieee.fixed_pkg.all;
 use ieee.fixed_float_types.all;
 
--- Control Unit per l'unità butterfly
+-- Control Unit per l'unità butterfly
 entity butterfly_cu is
     generic ( N : natural := 24 );
     port (
@@ -17,10 +17,18 @@ entity butterfly_cu is
         r_sum_en : out std_logic;
         r_ar_en  : out std_logic;
         r_ai_en  : out std_logic;
-        sel_sum    : out std_logic;  -- '0' per somma, '1 per sottrazione
+
+        sel_sum    : out std_logic; -- '0' per somma, '1 per sottrazione
         sel_S_or_A : out std_logic;
-        sel_shift  : out std_logic;  -- '0' per moltiplicazione, '1' per shift
-        sel_Ax     : out std_logic   -- '0' per Ar, '1' per Ai
+        sel_shift  : out std_logic; -- '0' per moltiplicazione, '1' per shift
+        sel_Ax     : out std_logic; -- '0' per Ar, '1' per Ai
+        sel_Bx     : in  std_logic; -- '0' per Br, '1' per Bi
+        sel_Wx     : in  std_logic; -- '0' per Wr, '1' per Wi
+
+        sel_in_bus  : in  std_logic_vector(0 to 2);
+        sel_out_bus : in  std_logic_vector(0 to 2);
+        sel_sum_in1 : in  std_logic;
+        sel_sum_in2 : in  std_logic_vector(1 downto 0)
     );
 end entity butterfly_cu;
 
@@ -30,10 +38,10 @@ architecture Behavioral of butterfly_cu is
     type state_t is record
         step : step_t;
 
-        -- finish_cycle: flag per capire se manca ancora metà ciclo di calcolo
+        -- finish_cycle: flag per capire se manca ancora metÃ  ciclo di calcolo
         -- prima di andare al done
-        -- 0 = manca metà ciclo
-        -- 1 = ciclo completo (fine modalit� continua)
+        -- 0 = manca metà  ciclo
+        -- 1 = ciclo completo (fine modalità  continua)
         finish_cycle : std_logic;
     end record;
 
@@ -106,15 +114,25 @@ begin
 
         case current_state.step is
             when IDLE =>
+                -- Ar e Br
                 r_ar_en <= '1';
                 rf_en(0) <= '1'; -- Br
 
             when S1 =>
+                -- TODO: mandare dati al moltiplicatore
+                -- Ai e Bi
                 r_ai_en <= '1';
                 rf_en(1) <= '1'; -- Bi
 
+                -- TODO: mandare dati al sommatore
+                rf_en(3) <= '1'; -- 2Ai
+                r_sum_en <= '1'; -- S2
+
             when S2 =>
-                null;
+                -- TODO: mandare dati al moltiplicatore
+
+                -- TODO: mandare dati al sottrattore
+
 
             when S3 =>
                 null;
