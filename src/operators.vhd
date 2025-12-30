@@ -18,7 +18,7 @@ entity Adder is
 end entity Adder;
 
 architecture Behavioral of Adder is
-    signal sum_reg : sfixed(1 downto -N);
+    signal sum_reg : sfixed(1 downto 1-N);
 begin
     process(clk)
     begin
@@ -48,7 +48,7 @@ entity Subtractor is
 end entity Subtractor;
 
 architecture Behavioral of Subtractor is
-    signal sub_reg : sfixed(1 downto -N);
+    signal sub_reg : sfixed(1 downto 1-N);
 begin
     process(clk)
     begin
@@ -160,7 +160,7 @@ begin
                 end if;
                 -- controllo x saturazione
                 if round_up then
-                    if integer_part = (others => '1') then 
+                    if integer_part = (N-1 downto 0 => '1') then 
                         N_Temp := integer_part;
                     else
                         N_Temp := integer_part + 1;
