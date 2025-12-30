@@ -111,8 +111,15 @@ begin
     Two_A <= A_times2;
 end architecture Behavioral;
 
+-- ROM per l'arrotondatore
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use ieee.fixed_pkg.all;
+use ieee.fixed_float_types.all;
+
 entity ROM_Rounder is 
-    generic ( n : natural; m : natural );  -- n : # bit interi, m : # bit frazionali
+    generic ( n : natural; m : natural );  -- n : # bit interi, m : # bit frazionari
     port (
         clk      : in  std_logic;
         cs       : in  std_logic;
@@ -122,7 +129,6 @@ entity ROM_Rounder is
 end entity ROM_Rounder;
 
 architecture Behavioral of ROM_Rounder is
-
     signal integer_part : unsigned(n -1 downto 0);
     signal fractional_part : unsigned(m -1 downto 0);
 begin
@@ -142,7 +148,7 @@ begin
                 if fractional_part(m - 1) = '0' then                 -- < 0.5   -> arrotonda x difetto
                     round_up := false;
                 else
-                if (m > 1) and (fractional_part(m - 2 downto 0) /= 0) then   -- > 0.5   -> arrotonda x eccesso     !!!!! m>1 xkè se m=1 non esistono altri bit che devo controllare
+                if (m > 1) and (fractional_part(m - 2 downto 0) /= 0) then   -- > 0.5   -> arrotonda x eccesso     !!!!! m>1 xkÃ¨ se m=1 non esistono altri bit che devo controllare
                         round_up := true;    
                     else                                             --  = 0.5  ->  vedo se pari o dispari
                         if integer_part(0) = '1' then              
