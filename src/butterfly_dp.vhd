@@ -15,7 +15,7 @@ entity butterfly_dp is
         r_sum_en : in  std_logic;
         r_ar_en  : in  std_logic;
         r_ai_en  : in  std_logic;
-        sum_sel  : in  std_logic;  -- '0' per somma, '1' per sottrazione
+        sum_sel  : in  std_logic;  -- sceglie il risultato da prendere: '0' per somma, '1' per sottrazione
         A        : in  sfixed(0 downto 1-N);
         B        : in  sfixed(0 downto 1-N);
         Wr       : in  sfixed(0 downto 1-N);
@@ -25,7 +25,7 @@ entity butterfly_dp is
     );
 end entity butterfly_dp;
 
--- TODO: SISTEMARE PARALLELISMO DATI E REGISTRI
+
 architecture Behavioral of butterfly_dp is
     constant INTERNAL_WIDTH : natural := 2*N + 2;
 
@@ -34,41 +34,30 @@ architecture Behavioral of butterfly_dp is
     signal rf_in  : rf_t;
     signal rf_out : rf_t;
 
-    -- R_sum: sum register
-    signal r_sum_in  : sfixed(1 downto 1-N);
-    signal r_sum_out : sfixed(1 downto 1-N);
-
     -- R_Ar: Ar register
-    signal r_ar_in  : sfixed(1 downto 1-N);
-    signal r_ar_out : sfixed(1 downto 1-N);
+    signal r_ar_in  : sfixed(0 downto 1-N);
+    signal r_ar_out : sfixed(0 downto 1-N);
 
     -- R_Ai: Ai register
-    signal r_ai_in  : sfixed(1 downto 1-N);
-    signal r_ai_out : sfixed(1 downto 1-N);
+    signal r_ai_in  : sfixed(0 downto 1-N);
+    signal r_ai_out : sfixed(0 downto 1-N);
 
-    -- TODO: rivedere il parallelismo
+    -- R_sum: sum register
+    signal r_sum_in  : sfixed(0 downto 1-INTERNAL_WIDTH);
+    signal r_sum_out : sfixed(0 downto 1-INTERNAL_WIDTH);
+
+    
     signal mul_in1, mul_in2 : sfixed(0 downto 1-N);
-    signal mul_out : sfixed(1 downto 2-2*N);
-    signal mul_shift_out : sfixed(3 downto 1-N);
+    signal mul_out : sfixed(0 downto 2-2*N);
+    signal mul_shift_out : sfixed(1 downto 1-N);
 
-    -- TODO: rivedere il parallelismo
-    signal sum_in1, sum_in2 : sfixed(0 downto 1-N);
-    signal add_out, sub_out, sum_out : sfixed(1 downto 1-N);
+    
+    signal sum_in1, sum_in2 : sfixed(1 downto 1-2*N);
+    signal add_out, sub_out, sum_out : sfixed(3 downto 2-2*N);
     signal sum_out_ext : sfixed(0 downto 1-INTERNAL_WIDTH);
 
 begin
     -- Registers
-    R_SUM: entity work.Reg
-        generic map ( N => INTERNAL_WIDTH )
-        port map (
-            arst => arst,
-            clk  => clk,
-            en   => r_sum_en,
-
-            d_in => std_logic_vector(r_sum_in),
-            sfixed(d_out) => r_sum_out
-        );
-
     R_AR: entity work.Reg
         generic map ( N => N )
         port map (
@@ -90,6 +79,18 @@ begin
             d_in => std_logic_vector(r_ai_in),
             sfixed(d_out) => r_ai_out
         );
+    
+    R_SUM: entity work.Reg
+        generic map ( N => INTERNAL_WIDTH )
+        port map (
+            arst => arst,
+            clk  => clk,
+            en   => r_sum_en,
+
+            d_in => std_logic_vector(r_sum_in),
+            sfixed(d_out) => r_sum_out
+        );
+
 
     process(clk, arst)
     begin
@@ -108,7 +109,7 @@ begin
             end loop;
         end if;
     end process;
-
+    
     MUL_INST: entity work.Multiplier
         generic map ( N => N )
         port map (
@@ -119,9 +120,9 @@ begin
             Two_A => mul_shift_out
         );
 
-    -- TODO: rivedere il parallelismo
+    
     ADD_INST: entity work.Adder
-        generic map ( N => N )
+        generic map ( N => 2*N+1 )
         port map (
             clk => clk,
             A   => sum_in1,
@@ -129,9 +130,9 @@ begin
             SUM => add_out
         );
 
-    -- TODO: rivedere il parallelismo
+    
     SUB_INST: entity work.Subtractor
-        generic map ( N => N )
+        generic map ( N => 2*N+1 )
         port map (
             clk => clk,
             A   => sum_in1,
@@ -141,5 +142,5 @@ begin
 
     sum_out <= add_out when sum_sel = '0' else sub_out;
     sum_out_ext <= resize(sum_out, sum_out_ext'high, sum_out_ext'low);
-    r_sum_in <= sum_out;
+    r_sum_in <= sum_out_ext;
 end architecture Behavioral;
