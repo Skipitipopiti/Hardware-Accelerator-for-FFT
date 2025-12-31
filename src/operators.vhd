@@ -23,7 +23,7 @@ begin
     process(clk)
     begin
         if rising_edge(clk) then
-            sum_reg <= A + B;
+            sum_reg <= resize(A + B, 1, 1-N);
         end if;
     end process;
 
@@ -53,7 +53,7 @@ begin
     process(clk)
     begin
         if rising_edge(clk) then
-            sub_reg <= A - B;
+            sub_reg <= resize(A - B, 1, 1-N);
         end if;
     end process;
 
@@ -84,25 +84,26 @@ end entity Multiplier;
 architecture Behavioral of Multiplier is
     signal prod_reg1 : sfixed(0 downto (2 - 2*N));
     signal prod_reg2 : sfixed(0 downto (2 - 2*N));
+
     signal A_times2 : sfixed(1 downto 1-N);
-    constant zeros : std_logic_vector(N-2 downto 0) := ( others => '0');
-    constant minus_one : sfixed(0 downto 1-N) := sfixed('1' & zeros);
 begin
     process(clk)
         variable temp_prod : sfixed(1 downto (2 - 2*N));
     begin
-        prod_reg2 <= prod_reg1;
         if rising_edge(clk) then
+            prod_reg2 <= prod_reg1;
+
             if shift = '1' then
-                -- sign extension 
-                A_times2 <= sfixed(A & '0');
+                A_times2 <= A & '0';
             else
-                if A = minus_one and B = minus_one then
-                    -- controlla prima se ci sarà overflow
-                    prod_reg1 <= ('0', others => '1');
+                temp_prod := A * B;
+
+                if temp_prod(1) = '0' and temp_prod(0) = '1' then
+                    -- caso di overflow positivo -> satura a 0.1111...11
+                    prod_reg1(0) <= '0';
+                    prod_reg1(-1 downto 2-2*N) <= (others => '1');
                 else
-                    temp_prod := A * B;
-                    prod_reg1 <= sfixed(temp_prod(0 downto (2 - 2*N)));
+                    prod_reg1 <= temp_prod(0 downto (2 - 2*N));
                 end if;
             end if;
         end if;
@@ -123,58 +124,54 @@ entity ROM_Rounder is
     generic ( n : natural; m : natural );  -- n : # bit interi, m : # bit frazionari
     port (
         cs       : in  std_logic;
-        addr     : in  std_logic_vector( (m + n - 1) downto 0);
-        data_out : out std_logic_vector(n-1 downto 0)
+        addr     : in  std_logic_vector(n-1 downto -m);
+        data_out : out unsigned(n - 1 downto 0)
     );
 end entity ROM_Rounder;
 
 architecture Behavioral of ROM_Rounder is
     signal integer_part : unsigned(n - 1 downto 0);
     signal fractional_part : unsigned(m - 1 downto 0);
-    constant zeros : unsigned(m-2 downto 0) := ( others => '1');
-    constant ones : unsigned(n-1 downto 0) := ( others => '1');
 begin
+    integer_part <= unsigned(addr(n - 1 downto 0));
+    fractional_part <= unsigned(addr(-1 downto -m));
 
-    integer_part <= unsigned(addr((m + n - 1) downto m));
-    fractional_part <= unsigned(addr(m - 1 downto 0));
+    process(cs, integer_part, fractional_part)
+        variable N_Temp    : unsigned(n - 1 downto 0); -- Valore arrotondato in uscita
+        -- flag che mi dice se arrotondare per eccesso o meno
+        variable round_up  : boolean;
 
-    process
-    variable N_Temp    : std_logic_vector(n - 1 downto 0); -- Valore arrotondato in uscita
-    --flag che mi dice se arrotondare per eccesso o no
-    variable round_up  : boolean;
     begin
-            if cs = '0' then
-                N_Temp := (others => '0'); 
-            else
-                if fractional_part(m - 1) = '0' then                 -- < 0.5   -> arrotonda x difetto
-                    round_up := false;
-                else
-                if (m > 1) and (fractional_part(m - 2 downto 0) /= zeros) then   -- > 0.5   -> arrotonda x eccesso     
-                    -- m>1 xk se m=1 non esistono altri bit che devo controllare
-                        round_up := true;    
-                    else                                             --  = 0.5  ->  vedo se pari o dispari
-                        if integer_part(0) = '1' then              
-                            round_up := true;                        -- dispari -> arrotonda x eccesso
-                        else
-                            round_up := false;                       -- pari    -> arrotonda x difetto
-                        end if;
-                    end if;
-                end if;
-                -- controllo x saturazione
-                if round_up then
-                    if integer_part - ones = 0  then
-                        N_Temp := STD_LOGIC_VECTOR(integer_part);
-                    else
-                        N_Temp := STD_LOGIC_VECTOR(integer_part + 1);
-                    end if;
-                else
-                    N_Temp := STD_LOGIC_VECTOR(integer_part);
-                end if;
+        if cs = '0' then
+            N_Temp := (others => '0'); 
+        else
+            -- < 0.5   -> arrotonda x difetto
+            if fractional_part(m - 1) = '0' then
+                round_up := false;
 
+            -- > 0.5   -> arrotonda x eccesso !!!!! m>1 xk se m=1 non esistono altri bit che devo controllare
+            elsif (m > 1) and (to_integer(unsigned(fractional_part(m - 2 downto 0))) /= 0) then
+                round_up := true;    
+
+            --  = 0.5  ->  vedo se pari o dispari
+            else
+                -- dispari -> arrotonda x eccesso
+                round_up := integer_part(0) = '1';
             end if;
-            
-            data_out <= N_Temp;
-            
+        end if;
+
+        -- controllo x saturazione
+        if round_up then
+            if integer_part = (n-1 downto 0 => '1') then 
+                N_Temp := integer_part;
+            else
+                N_Temp := integer_part + 1;
+            end if;
+        else
+            N_Temp := integer_part;
+        end if;
+        
+        data_out <= N_Temp;
     end process;
     
 end  Behavioral;

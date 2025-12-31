@@ -27,7 +27,7 @@ architecture tb of tb_Multiplier is
     signal PROD  : sfixed (0 downto 2-2*N);
     signal Two_A : sfixed (1 downto 1-N);
 
-    constant TbPeriod : time := 100 ns;
+    constant TbPeriod : time := 10 ns;
     signal TbClock : std_logic := '0';
 
 begin
@@ -56,11 +56,13 @@ begin
         shift <= '0';
 
         -- Add stimuli here
+        wait for TbPeriod/2 + 1 ns;
         A <= "1111" after TbPeriod, "1000" after 2*TbPeriod, "0000" after 3*TbPeriod, "1100" after 4*TbPeriod, "1111" after 5*TbPeriod, "1010" after 6*TbPeriod, "0000" after 7*TbPeriod, "1100" after 8*TbPeriod;
         B <= "1111" after TbPeriod, "1000" after 2*TbPeriod, "0101" after 3*TbPeriod, "1010" after 4*TbPeriod;
+
+        wait for 2*TbPeriod;
         shift <= '1' after 4*TbPeriod;
-        wait for 9 * TbPeriod;
+
         wait;
     end process;
-
 end tb;

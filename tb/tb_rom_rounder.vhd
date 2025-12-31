@@ -10,6 +10,7 @@ end tb_ROM_Rounder;
 architecture tb of tb_ROM_Rounder is
     constant n : natural := 3;
     constant m : natural := 5;
+
     component ROM_Rounder
         generic ( n : natural; m : natural);
         port (cs       : in std_logic;
@@ -40,10 +41,3 @@ begin
     end process;
 
 end tb;
-
--- Configuration block below is required by some simulators. Usually no need to edit.
-
-configuration cfg_tb_ROM_Rounder of tb_ROM_Rounder is
-    for tb
-    end for;
-end cfg_tb_ROM_Rounder;

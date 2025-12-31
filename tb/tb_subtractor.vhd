@@ -23,7 +23,7 @@ architecture tb of tb_Subtractor is
     signal B   : sfixed (0 downto 1-N);
     signal SUB : sfixed (1 downto 1-N);
 
-    constant TbPeriod : time := 100 ns;
+    constant TbPeriod : time := 10 ns;
     signal TbClock : std_logic := '0';
 
 begin
@@ -49,6 +49,7 @@ begin
         B <= (others => '0');
 
         -- Add stimuli here
+        wait for TbPeriod/2 + 1 ns;
         A <= "1111" after TbPeriod, "1010" after 2*TbPeriod, "0000" after 3*TbPeriod, "1100" after 4*TbPeriod;
         B <= "1111" after TbPeriod, "1100" after 2*TbPeriod, "0101" after 3*TbPeriod, "1010" after 4*TbPeriod;
         wait for 5 * TbPeriod;
