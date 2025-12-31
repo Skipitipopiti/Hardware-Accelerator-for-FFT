@@ -23,7 +23,7 @@ architecture tb of tb_Subtractor is
     signal B   : sfixed (0 downto 1-N);
     signal SUB : sfixed (1 downto 1-N);
 
-    constant TbPeriod : time := 1000 ns;
+    constant TbPeriod : time := 100 ns;
     signal TbClock : std_logic := '0';
 
 begin

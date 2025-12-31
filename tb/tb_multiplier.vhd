@@ -15,7 +15,7 @@ architecture tb of tb_Multiplier is
             A     : in sfixed (0 downto 1-N);
             B     : in sfixed (0 downto 1-N);
             shift : in std_logic;
-            PROD  : out sfixed (1 downto 2-2*N);
+            PROD  : out sfixed (0 downto 2-2*N);
             Two_A : out sfixed (1 downto 1-N)
             );
     end component;
@@ -24,10 +24,10 @@ architecture tb of tb_Multiplier is
     signal A     : sfixed (0 downto 1-N);
     signal B     : sfixed (0 downto 1-N);
     signal shift : std_logic;
-    signal PROD  : sfixed (1 downto 2-2*N);
+    signal PROD  : sfixed (0 downto 2-2*N);
     signal Two_A : sfixed (1 downto 1-N);
 
-    constant TbPeriod : time := 1000 ns;
+    constant TbPeriod : time := 100 ns;
     signal TbClock : std_logic := '0';
 
 begin
@@ -56,8 +56,8 @@ begin
         shift <= '0';
 
         -- Add stimuli here
-        A <= "1111" after TbPeriod, "1010" after 2*TbPeriod, "0000" after 3*TbPeriod, "1100" after 4*TbPeriod, "1111" after 5*TbPeriod, "1010" after 6*TbPeriod, "0000" after 7*TbPeriod, "1100" after 8*TbPeriod;
-        B <= "1111" after TbPeriod, "1100" after 2*TbPeriod, "0101" after 3*TbPeriod, "1010" after 4*TbPeriod;
+        A <= "1111" after TbPeriod, "1000" after 2*TbPeriod, "0000" after 3*TbPeriod, "1100" after 4*TbPeriod, "1111" after 5*TbPeriod, "1010" after 6*TbPeriod, "0000" after 7*TbPeriod, "1100" after 8*TbPeriod;
+        B <= "1111" after TbPeriod, "1000" after 2*TbPeriod, "0101" after 3*TbPeriod, "1010" after 4*TbPeriod;
         shift <= '1' after 4*TbPeriod;
         wait for 9 * TbPeriod;
         wait;

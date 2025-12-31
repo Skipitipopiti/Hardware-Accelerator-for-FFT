@@ -76,32 +76,33 @@ entity Multiplier is
         A     : in  sfixed(0 downto 1-N);
         B     : in  sfixed(0 downto 1-N);
         shift : in  std_logic;
-        PROD  : out sfixed(1 downto 2-2*N);
+        PROD  : out sfixed(0 downto 2-2*N);
         Two_A : out sfixed(1 downto 1-N)
     );
 end entity Multiplier;
 
 architecture Behavioral of Multiplier is
-    signal prod_reg1 : sfixed(0 downto (1 - 2*N));
-    signal prod_reg2 : sfixed(0 downto (1 - 2*N));
-
+    signal prod_reg1 : sfixed(0 downto (2 - 2*N));
+    signal prod_reg2 : sfixed(0 downto (2 - 2*N));
     signal A_times2 : sfixed(1 downto 1-N);
+    constant zeros : std_logic_vector(N-2 downto 0) := ( others => '0');
+    constant minus_one : sfixed(0 downto 1-N) := sfixed('1' & zeros);
 begin
     process(clk)
-        variable temp_prod : sfixed(1 downto (1 - 2*N));
+        variable temp_prod : sfixed(1 downto (2 - 2*N));
     begin
+        prod_reg2 <= prod_reg1;
         if rising_edge(clk) then
             if shift = '1' then
                 -- sign extension 
-                A_times2 <= shift_left(A, 1);
+                A_times2 <= sfixed(A & '0');
             else
-                temp_prod := A * B;
-
-                if temp_prod(1) = '0' and temp_prod(0) = '1' then
-                    -- caso di overflow positivo
+                if A = minus_one and B = minus_one then
+                    -- controlla prima se ci sarà overflow
                     prod_reg1 <= ('0', others => '1');
                 else
-                    prod_reg1 <= sfixed(temp_prod(0 downto (1 - 2*N)));
+                    temp_prod := A * B;
+                    prod_reg1 <= sfixed(temp_prod(0 downto (2 - 2*N)));
                 end if;
             end if;
         end if;
