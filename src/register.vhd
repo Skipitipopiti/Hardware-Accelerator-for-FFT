@@ -16,7 +16,7 @@ end Reg;
 
 architecture Behavior of Reg is
 begin
-	process (clk, arst)
+	process (clk, arst, en, d_in)
     begin
 		if arst = '1' then
 			d_out <= (N-1 downto 0 => '0');

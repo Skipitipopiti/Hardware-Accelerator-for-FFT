@@ -15,16 +15,17 @@ entity butterfly_dp is
         r_sum_en  : in  std_logic;
         r_ar_en   : in  std_logic;
         r_ai_en   : in  std_logic;
-        sel_sum   : in  std_logic;  -- '0' per somma, '1' per sottrazione
-        sel_shift : in  std_logic;  -- '0' per moltiplicazione, '1' per shift
-        sel_Ax    : in  std_logic;
-        sel_Bx    : in  std_logic;
-        sel_Wx    : in  std_logic;
+
+        sel_sum    : in  std_logic;  -- '1' per somma, '0' per sottrazione
+        sel_shift  : in  std_logic;  -- '0' per moltiplicazione, '1' per shift
+        sel_Ax     : in  std_logic;
+        sel_Bx     : in  std_logic;
+        sel_Wx     : in  std_logic;
 
         sel_in_bus  : in  std_logic_vector(0 to 2);
         sel_out_bus : in  std_logic_vector(0 to 2);
-        sel_sum_in1 : in  std_logic;
-        sel_sum_in2 : in  std_logic_vector(1 downto 0);
+        sel_sum_in1 : in  std_logic_vector(1 downto 0);
+        sel_sum_in2 : in  std_logic;
 
         A  : in  sfixed(0 downto 1-N);
         B  : in  sfixed(0 downto 1-N);
@@ -58,11 +59,7 @@ architecture Behavioral of butterfly_dp is
     signal r_ai_in  : sfixed(0 downto 1-N);
     signal r_ai_out : sfixed(0 downto 1-N);
 
-    -- R_sum: sum register
-    signal r_sum_in  : sfixed(0 downto 1-INTERNAL_WIDTH);
-    signal r_sum_out : sfixed(0 downto 1-INTERNAL_WIDTH);
 
-    
     signal mul_in1, mul_in2 : sfixed(0 downto 1-N);
     signal mul_out : sfixed(0 downto 2-2*N);
     signal mul_shift_out : sfixed(1 downto 1-N);
@@ -89,6 +86,8 @@ begin
             d_in => std_logic_vector(r_sum_in),
             sfixed(d_out) => r_sum_out
         );
+
+    r_sum_in <= sum_out_ext;
 
     r_ar_in <= A;
     R_AR: entity work.Reg
@@ -128,18 +127,22 @@ begin
     in_bus(2) <= mul_shift_out when sel_in_bus(2) = '0' else rounder_out; -- 2Ar/2Ai o A'r/A'i/B'i
 
     -- OUT_BUS
-    out_bus(0) <= rf_out(0) when sel_out_bus(0) = '0' else rf_out(2); -- Br or B'r/B'i
+    out_bus(0) <= rf_out(0) when sel_out_bus(0) = '0' else rf_out(2); -- Br/B'r o A'r/B'i
     out_bus(1) <= rf_out(1); -- Bi o prodotti
-    out_bus(2) <= rf_out(2) when sel_out_bus(2) = '0' else rf_out(3); -- 2Ar o 2Ai
+    out_bus(2) <= rf_out(2) when sel_out_bus(2) = '0' else rf_out(3); -- 2Ar/A'r/B'i o 2Ai/A'i
     out_bus(3) <= r_sum_out;
 
     Br_or_Bi <= out_bus(0) when sel_Bx = '0' else out_bus(1);
-    sum_in1 <= out_bus(1) when sel_sum_in1 = '0' else out_bus(3);
-    with sel_sum_in2 select sum_in2 <=
+
+    with sel_sum_in1 select sum_in1 <=
         r_ar_out when "00",
         r_ai_out when "01",
-        out_bus(3) when "10",
-        out_bus(2) when others;
+        out_bus(2) when "10", -- 2Ar o 2Ai
+        out_bus(3) when "11"; -- somme
+
+    with sel_sum_in2 select sum_in2 <=
+        out_bus(1) when '0', -- Bi o prodotti
+        out_bus(3) when '1'; -- somme
     
     Ap <= out_bus(2);
     Bp <= out_bus(0);
@@ -175,7 +178,7 @@ begin
             Two_A => mul_shift_out
         );
 
-    
+
     ADD_INST: entity work.Adder
         generic map ( N => 2*N+1 )
         port map (
@@ -185,7 +188,6 @@ begin
             SUM => add_out
         );
 
-    
     SUB_INST: entity work.Subtractor
         generic map ( N => 2*N+1 )
         port map (
@@ -194,6 +196,9 @@ begin
             B   => sum_in2,
             SUB => sub_out
         );
+
+    sum_out <= add_out when sel_sum = '1' else sub_out;
+    sum_out_ext <= resize(sum_out, sum_out_ext'high, sum_out_ext'low);
 
     -- TODO: rivedere il parallelismo
     ROUNDER_INST: entity work.rom_rounder
@@ -208,7 +213,4 @@ begin
     -- TODO: impostare parte reale e parte frazionaria + COMPLETARE
     rounder_out <= sfixed(std_logic_vector(rounder_in(...) & rounder_raw_out(...)));
 
-    sum_out <= add_out when sel_sum = '0' else sub_out;
-    sum_out_ext <= resize(sum_out, sum_out_ext'high, sum_out_ext'low);
-    r_sum_in <= sum_out_ext;
 end architecture Behavioral;
