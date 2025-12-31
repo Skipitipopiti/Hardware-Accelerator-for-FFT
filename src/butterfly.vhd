@@ -28,8 +28,8 @@ architecture Behavioral of butterfly is
     signal r_sum_en, r_ar_en, r_ai_en : std_logic;
     signal sel_sum, sel_shift, sel_Ax, sel_Bx, sel_Wx: std_logic;
     signal sel_in_bus, sel_out_bus : std_logic_vector(0 to 2);
-    signal sel_sum_in1 : std_logic;
-    signal sel_sum_in2 : std_logic_vector(1 downto 0);
+    signal sel_sum_in1 : std_logic_vector(1 downto 0);
+    signal sel_sum_in2 : std_logic;
 
 begin
     DATAPATH: entity work.butterfly_dp
@@ -59,7 +59,6 @@ begin
         );
     
     CONTROL_UNIT: entity work.butterfly_cu
-        generic map ( N => N )
         port map (
             clk      => clk,
             arst     => arst,
@@ -70,7 +69,9 @@ begin
             r_sum_en => r_sum_en,
             r_ar_en  => r_ar_en,
             r_ai_en  => r_ai_en,
+
             sel_sum  => sel_sum,
+            sel_shift  => sel_shift,
             sel_Ax    => sel_Ax,
             sel_Bx    => sel_Bx,
             sel_Wx    => sel_Wx,
