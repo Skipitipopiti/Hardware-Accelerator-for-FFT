@@ -122,34 +122,35 @@ use ieee.fixed_float_types.all;
 entity ROM_Rounder is 
     generic ( n : natural; m : natural );  -- n : # bit interi, m : # bit frazionari
     port (
-        clk      : in  std_logic;
         cs       : in  std_logic;
-        addr     : in  unsigned( (m + n -1) downto 0);
-        data_out : out unsigned(n-1 downto 0)
+        addr     : in  std_logic_vector( (m + n - 1) downto 0);
+        data_out : out std_logic_vector(n-1 downto 0)
     );
 end entity ROM_Rounder;
 
 architecture Behavioral of ROM_Rounder is
-    signal integer_part : unsigned(n -1 downto 0);
-    signal fractional_part : unsigned(m -1 downto 0);
+    signal integer_part : unsigned(n - 1 downto 0);
+    signal fractional_part : unsigned(m - 1 downto 0);
+    constant zeros : unsigned(m-2 downto 0) := ( others => '1');
+    constant ones : unsigned(n-1 downto 0) := ( others => '1');
 begin
 
-    integer_part <= addr((m + n -1) downto m);
-    fractional_part <= addr(m -1 downto 0);
+    integer_part <= unsigned(addr((m + n - 1) downto m));
+    fractional_part <= unsigned(addr(m - 1 downto 0));
 
-    process(clk)
-    variable N_Temp    : unsigned(n - 1 downto 0); -- Valore arrotondato in uscita
-    --flag che mi dicese arrotondare per eccesso o meno
+    process
+    variable N_Temp    : std_logic_vector(n - 1 downto 0); -- Valore arrotondato in uscita
+    --flag che mi dice se arrotondare per eccesso o no
     variable round_up  : boolean;
     begin
-        if rising_edge(clk) then
             if cs = '0' then
                 N_Temp := (others => '0'); 
             else
                 if fractional_part(m - 1) = '0' then                 -- < 0.5   -> arrotonda x difetto
                     round_up := false;
                 else
-                if (m > 1) and (fractional_part(m - 2 downto 0) /= 0) then   -- > 0.5   -> arrotonda x eccesso     !!!!! m>1 xkÃ¨ se m=1 non esistono altri bit che devo controllare
+                if (m > 1) and (fractional_part(m - 2 downto 0) /= zeros) then   -- > 0.5   -> arrotonda x eccesso     
+                    -- m>1 xk se m=1 non esistono altri bit che devo controllare
                         round_up := true;    
                     else                                             --  = 0.5  ->  vedo se pari o dispari
                         if integer_part(0) = '1' then              
@@ -161,20 +162,19 @@ begin
                 end if;
                 -- controllo x saturazione
                 if round_up then
-                    if integer_part = (N-1 downto 0 => '1') then 
-                        N_Temp := integer_part;
+                    if integer_part - ones = 0  then
+                        N_Temp := STD_LOGIC_VECTOR(integer_part);
                     else
-                        N_Temp := integer_part + 1;
+                        N_Temp := STD_LOGIC_VECTOR(integer_part + 1);
                     end if;
                 else
-                    N_Temp := integer_part;
+                    N_Temp := STD_LOGIC_VECTOR(integer_part);
                 end if;
 
             end if;
             
             data_out <= N_Temp;
             
-        end if;
     end process;
     
 end  Behavioral;
