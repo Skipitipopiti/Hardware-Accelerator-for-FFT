@@ -1,11 +1,11 @@
 [libraries]
 
 lib.files = [
-"src\\register.vhd",
-"tb\\tb_adder.vhd",
 "tb\\tb_subtractor.vhd",
 "tb\\tb_operators.vhd",
 "tb\\tb_multiplier.vhd",
+"tb\\tb_adder.vhd",
+"src\\register.vhd",
 "src\\operators.vhd",
 "src\\butterfly_dp.vhd",
 "src\\butterfly_cu.vhd",

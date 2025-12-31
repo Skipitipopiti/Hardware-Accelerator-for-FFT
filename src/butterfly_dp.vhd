@@ -50,10 +50,6 @@ architecture Behavioral of butterfly_dp is
     signal in_bus : in_bus_t;
     signal out_bus : rf_t;
 
-    -- R_sum: sum register
-    signal r_sum_in  : sfixed(1 downto 1-N);
-    signal r_sum_out : sfixed(1 downto 1-N);
-
     -- R_Ar: Ar register
     signal r_ar_in  : sfixed(0 downto 1-N);
     signal r_ar_out : sfixed(0 downto 1-N);

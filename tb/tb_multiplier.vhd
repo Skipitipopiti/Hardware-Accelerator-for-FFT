@@ -29,7 +29,6 @@ architecture tb of tb_Multiplier is
 
     constant TbPeriod : time := 1000 ns;
     signal TbClock : std_logic := '0';
-    signal TbSimEnded : std_logic := '0';
 
 begin
 
