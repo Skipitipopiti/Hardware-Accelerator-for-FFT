@@ -121,10 +121,10 @@ use ieee.fixed_pkg.all;
 use ieee.fixed_float_types.all;
 
 entity ROM_Rounder is 
-    generic ( n : natural; m : natural );  -- n : # bit interi, m : # bit frazionari
+    generic ( n : positive; m : natural range 2 to natural'high);  -- n : # bit interi, m : # bit frazionari
     port (
         cs       : in  std_logic;
-        addr     : in  std_logic_vector(n-1 downto -m);
+        addr     : in  ufixed(n - 1 downto -m);
         data_out : out unsigned(n - 1 downto 0)
     );
 end entity ROM_Rounder;
@@ -134,7 +134,7 @@ architecture Behavioral of ROM_Rounder is
     signal fractional_part : unsigned(m - 1 downto 0);
 begin
     integer_part <= unsigned(addr(n - 1 downto 0));
-    fractional_part <= unsigned(addr(-1 downto -m));
+    fractional_part <= unsigned(to_slv(addr(-1 downto -m)));
 
     process(cs, integer_part, fractional_part)
         variable N_Temp    : unsigned(n - 1 downto 0); -- Valore arrotondato in uscita
@@ -149,12 +149,11 @@ begin
             if fractional_part(m - 1) = '0' then
                 round_up := false;
 
-            -- > 0.5   -> arrotonda x eccesso !!!!! m>1 xk se m=1 non esistono altri bit che devo controllare
-            elsif (m > 1) and (to_integer(unsigned(fractional_part(m - 2 downto 0))) /= 0) then
-                round_up := true;    
-
-            --  = 0.5  ->  vedo se pari o dispari
+            elsif (to_integer(unsigned(fractional_part(m - 2 downto 0))) /= 0) then
+                -- > 0.5   -> arrotonda x eccesso !!!!! m>1 xk se m=1 non esistono altri bit che devo controllare
+                round_up := true;
             else
+                --  = 0.5  ->  vedo se pari o dispari
                 -- dispari -> arrotonda x eccesso
                 round_up := integer_part(0) = '1';
             end if;
