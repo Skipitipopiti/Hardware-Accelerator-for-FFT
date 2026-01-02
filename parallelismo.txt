@@ -1,0 +1,16 @@
+
+i)   x.xxxxz   -- Ingresso
+     0  -3
+         123,456
+
+1) yyx.xxxxz   -- Uscita 1
+=>   y.yxxxx (>> 2)
+     0  -3
+         123,456
+
+2) -yx.xxxxz   -- Uscita 2
+     0  -3
+         123,456
+=> --y.xxxxx (>> 1)
+
+

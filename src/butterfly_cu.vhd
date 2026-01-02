@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 use ieee.fixed_pkg.all;
 use ieee.fixed_float_types.all;
 
--- Control Unit per l'unità butterfly
+-- Control Unit per l'unità butterfly
 entity butterfly_cu is
     port (
         clk      : in  std_logic;
@@ -36,10 +36,10 @@ architecture Behavioral of butterfly_cu is
     type state_t is record
         step : step_t;
 
-        -- finish_cycle: flag per capire se manca ancora metÃ  ciclo di calcolo
+        -- finish_cycle: flag per capire se manca ancora metà ciclo di calcolo
         -- prima di andare al done
-        -- 0 = manca metà  ciclo
-        -- 1 = ciclo completo (fine modalità  continua)
+        -- 0 = manca metà ciclo
+        -- 1 = ciclo completo (fine modalità continua)
         finish_cycle : std_logic;
     end record;
 
@@ -100,8 +100,9 @@ begin
     process(current_state)
     begin
         -- Default
-        done   <= '0';
-        rf_en  <= (others => '0');
+        done <= '0';
+
+        rf_en    <= (others => '0');
         r_sum_en <= '0';
         r_ar_en  <= '0';
         r_ai_en  <= '0';

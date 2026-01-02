@@ -13,7 +13,10 @@ entity butterfly is
         arst     : in  std_logic;
         start    : in  std_logic;
         done     : out std_logic;
+
+        -- TODO: deve passare per la CU?
         SF_2H_1L : in  std_logic; -- fattore di scala
+
         A        : in  sfixed(0 downto 1-N);
         B        : in  sfixed(0 downto 1-N);
         Wr       : in  sfixed(0 downto 1-N);
@@ -41,6 +44,9 @@ begin
             r_sum_en  => r_sum_en,
             r_ar_en   => r_ar_en,
             r_ai_en   => r_ai_en,
+
+            SF_2H_1L => SF_2H_1L,
+
             sel_sum   => sel_sum,
             sel_shift => sel_shift,
             sel_Ax    => sel_Ax,
@@ -50,6 +56,7 @@ begin
             sel_out_bus => sel_out_bus,
             sel_sum_in1 => sel_sum_in1,
             sel_sum_in2 => sel_sum_in2,
+
             A  => A,
             B  => B,
             Wr => Wr,
@@ -64,7 +71,9 @@ begin
             arst     => arst,
             start    => start,
             done     => done,
+
             SF_2H_1L => SF_2H_1L,
+
             rf_en    => rf_en,
             r_sum_en => r_sum_en,
             r_ar_en  => r_ar_en,

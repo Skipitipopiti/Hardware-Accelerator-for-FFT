@@ -16,6 +16,8 @@ entity butterfly_dp is
         r_ar_en   : in  std_logic;
         r_ai_en   : in  std_logic;
 
+        SF_2H_1L : in  std_logic;  -- fattore di scala
+
         sel_sum    : in  std_logic;  -- '1' per somma, '0' per sottrazione
         sel_shift  : in  std_logic;  -- '0' per moltiplicazione, '1' per shift
         sel_Ax     : in  std_logic;
@@ -38,16 +40,20 @@ end entity butterfly_dp;
 
 
 architecture Behavioral of butterfly_dp is
-    constant INTERNAL_WIDTH : natural := 2*N + 2;
+    constant INTERNAL_WIDTH : natural := 2*N + 1;
+
+    -- Parametri del ROM rounder
+    constant RR_N : natural := 3;
+    constant RR_M : natural := 5;
 
     signal Ax, Br_or_Bi : sfixed(0 downto 1-N);
 
     -- Il register file deve contenere valori con il parallelismo interno massimo
-    type rf_t is array (0 to 3) of sfixed(0 downto 1-INTERNAL_WIDTH);
+    type rf_t is array (0 to 3) of std_logic_vector(INTERNAL_WIDTH-1 downto 0);
     signal rf_in  : rf_t;
     signal rf_out : rf_t;
 
-    type in_bus_t is array (0 to 2) of sfixed(0 downto 1-INTERNAL_WIDTH);
+    type in_bus_t is array (0 to 2) of std_logic_vector(INTERNAL_WIDTH-1 downto 0);
     signal in_bus : in_bus_t;
     signal out_bus : rf_t;
 
@@ -59,20 +65,22 @@ architecture Behavioral of butterfly_dp is
     signal r_ai_in  : sfixed(0 downto 1-N);
     signal r_ai_out : sfixed(0 downto 1-N);
 
+    signal r_sum_in, r_sum_out : sfixed(2 downto 2-2*N);
 
     signal mul_in1, mul_in2 : sfixed(0 downto 1-N);
     signal mul_out : sfixed(0 downto 2-2*N);
     signal mul_shift_out : sfixed(1 downto 1-N);
 
     
-    signal sum_in1, sum_in2 : sfixed(1 downto 1-2*N);
-    signal add_out, sub_out, sum_out : sfixed(3 downto 2-2*N);
-    signal sum_out_ext : sfixed(0 downto 1-INTERNAL_WIDTH);
+    signal sum_in1, sum_in2 : sfixed(2 downto 2-2*N); -- 2N + 1
+    signal add_out, sub_out : sfixed(3 downto 2-2*N); -- 2N + 2
+    signal sum_out : sfixed(2 downto 2-2*N); -- 2N + 1
+    signal sum_out_ext : sfixed(0 downto 1-INTERNAL_WIDTH); -- 2N + 1
 
     -- TODO: rivedere il parallelismo
-    signal rounder_in  : sfixed(0 downto 1-INTERNAL_WIDTH);
+    signal rounder_in  : ufixed(RR_N-1 downto -RR_M);
     signal rounder_out : sfixed(0 downto 1-INTERNAL_WIDTH);
-    signal rounder_raw_out : std_logic_vector(0 downto 0);
+    signal rounder_raw_out : std_logic_vector(RR_N-1 downto 0);
 
 begin
     -- Registers
@@ -83,11 +91,11 @@ begin
             clk  => clk,
             en   => r_sum_en,
 
-            d_in => std_logic_vector(r_sum_in),
+            d_in => to_slv(r_sum_in),
             sfixed(d_out) => r_sum_out
         );
 
-    r_sum_in <= sum_out_ext;
+    r_sum_in <= sum_out;
 
     r_ar_in <= A;
     R_AR: entity work.Reg
@@ -97,7 +105,7 @@ begin
             clk  => clk,
             en   => r_ar_en,
 
-            d_in => std_logic_vector(r_ar_in),
+            d_in => to_slv(r_ar_in),
             sfixed(d_out) => r_ar_out
         );
 
@@ -109,7 +117,7 @@ begin
             clk  => clk,
             en   => r_ai_en,
 
-            d_in => std_logic_vector(r_ai_in),
+            d_in => to_slv(r_ai_in),
             sfixed(d_out) => r_ai_out
         );
     
@@ -122,38 +130,39 @@ begin
     rf_in(2) <= in_bus(2); 
     rf_in(3) <= in_bus(2); -- sia rf(2) che rf(3) sono connessi allo stesso bus
     
-    in_bus(0) <= B when sel_in_bus(0) = '0' else rounder_out; -- Br o B'r
-    in_bus(1) <= B when sel_in_bus(1) = '0' else mul_out; -- Bi o prodotti
-    in_bus(2) <= mul_shift_out when sel_in_bus(2) = '0' else rounder_out; -- 2Ar/2Ai o A'r/A'i/B'i
+    in_bus(0) <= to_slv(resize(B, 2, 3-INTERNAL_WIDTH))
+        when sel_in_bus(0) = '0' else to_slv(rounder_out); -- Br o B'r
+    in_bus(1) <= to_slv(resize(B, 2, 3-INTERNAL_WIDTH))
+        when sel_in_bus(1) = '0' else to_slv(resize(mul_out, 2, 3-INTERNAL_WIDTH)); -- Bi o prodotti
+    in_bus(2) <= to_slv(resize(mul_shift_out, 2, 3-INTERNAL_WIDTH))
+        when sel_in_bus(2) = '0' else to_slv(rounder_out); -- 2Ar/2Ai o A'r/A'i/B'i
 
     -- OUT_BUS
     out_bus(0) <= rf_out(0) when sel_out_bus(0) = '0' else rf_out(2); -- Br/B'r o A'r/B'i
     out_bus(1) <= rf_out(1); -- Bi o prodotti
     out_bus(2) <= rf_out(2) when sel_out_bus(2) = '0' else rf_out(3); -- 2Ar/A'r/B'i o 2Ai/A'i
-    out_bus(3) <= r_sum_out;
+    out_bus(3) <= to_slv(r_sum_out);
 
-    Br_or_Bi <= out_bus(0) when sel_Bx = '0' else out_bus(1);
+    Br_or_Bi <= to_sfixed(out_bus(0)(N-1 downto 0), 0, 1-N)
+        when sel_Bx = '0' else to_sfixed(out_bus(1)(N-1 downto 0), 0, 1-N);
 
     with sel_sum_in1 select sum_in1 <=
-        r_ar_out when "00",
-        r_ai_out when "01",
-        out_bus(2) when "10", -- 2Ar o 2Ai
-        out_bus(3) when "11"; -- somme
+        resize(r_ar_out, 2, 3-INTERNAL_WIDTH)      when "00",
+        resize(r_ai_out, 2, 3-INTERNAL_WIDTH)      when "01",
+        to_sfixed(out_bus(2), 2, 3-INTERNAL_WIDTH) when "10", -- 2Ar o 2Ai
+        to_sfixed(out_bus(3), 2, 3-INTERNAL_WIDTH) when others; -- somme
 
     with sel_sum_in2 select sum_in2 <=
-        out_bus(1) when '0', -- Bi o prodotti
-        out_bus(3) when '1'; -- somme
+        to_sfixed(out_bus(1), 2, 3-INTERNAL_WIDTH) when '0', -- Bi o prodotti
+        to_sfixed(out_bus(3), 2, 3-INTERNAL_WIDTH) when others; -- somme
     
-    Ap <= out_bus(2);
-    Bp <= out_bus(0);
+    Ap <= to_sfixed(out_bus(2)(N-1 downto 0), 0, 1-N);
+    Bp <= to_sfixed(out_bus(0)(N-1 downto 0), 0, 1-N);
 
     process(clk, arst)
     begin
         if arst = '1' then
             rf_out <= (others => (others => '0'));
-            r_sum_out <= (others => '0');
-            r_ar_out <= (others => '0');
-            r_ai_out <= (others => '0');
 
         elsif rising_edge(clk) then
             -- Scrittura nel register file
@@ -197,20 +206,33 @@ begin
             SUB => sub_out
         );
 
-    sum_out <= add_out when sel_sum = '1' else sub_out;
-    sum_out_ext <= resize(sum_out, sum_out_ext'high, sum_out_ext'low);
+    -- Scartiamo il bit di overflow (il parallelismo garantisce che non si verifichi)
+    sum_out <= add_out(sum_out'high downto sum_out'low) when sel_sum = '1'
+        else sub_out(sum_out'high downto sum_out'low);
+
+    process (sum_out, SF_2H_1L)
+    begin
+        if SF_2H_1L = '1' then
+            sum_out_ext <= shift_right(sum_out, 2);
+        else
+            sum_out_ext <= shift_right(sum_out, 1);
+        end if;
+    end process;
 
     -- TODO: rivedere il parallelismo
+    rounder_in <= to_ufixed(to_slv(r_sum_out(-N+RR_N downto 1-N-RR_M)), RR_N-1, -RR_M);
+
     ROUNDER_INST: entity work.rom_rounder
-        generic map ( n => 3, m => 5 )
+        generic map ( n => RR_N, m => RR_M )
         port map (
-            clk => clk, -- TODO: verificare se serve il clock
-            cs => '1',
-            addr => unsigned(rounder_in),
+            cs => '1', -- TODO: controllare il CS dalla CU
+            addr => rounder_in,
             std_logic_vector(data_out) => rounder_raw_out
         );
     
-    -- TODO: impostare parte reale e parte frazionaria + COMPLETARE
-    rounder_out <= sfixed(std_logic_vector(rounder_in(...) & rounder_raw_out(...)));
+    rounder_out <= resize(
+        to_sfixed(to_slv(r_sum_out(0 downto 1-N+RR_N)) & rounder_raw_out, 0, 1-N),
+        0, 1-INTERNAL_WIDTH
+    );
 
 end architecture Behavioral;

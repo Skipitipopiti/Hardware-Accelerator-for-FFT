@@ -121,7 +121,8 @@ use ieee.fixed_pkg.all;
 use ieee.fixed_float_types.all;
 
 entity ROM_Rounder is 
-    generic ( n : positive; m : natural range 2 to natural'high);  -- n : # bit interi, m : # bit frazionari
+    -- n : # bit interi, m : # bit frazionari
+    generic ( n : positive; m : natural range 2 to natural'high );
     port (
         cs       : in  std_logic;
         addr     : in  ufixed(n - 1 downto -m);
@@ -173,4 +174,4 @@ begin
         data_out <= N_Temp;
     end process;
     
-end  Behavioral;
+end Behavioral;
