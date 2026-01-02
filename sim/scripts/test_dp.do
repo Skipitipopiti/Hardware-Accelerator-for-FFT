@@ -11,17 +11,17 @@ vcom -work ./work ../src/butterfly.vhd
 vcom -work ./work ../tb/tb_butterfly.vhd
 
 
-vsim work.tb_butterfly_dp -voptargs=+acc
+vsim work.tb_butterfly -voptargs=+acc
 
 add wave -noupdate -divider "Test Butterfly"
 add wave -noupdate tb_butterfly/*
 
 
-add wave -noupdate -divider "Datapath Internals"
+add wave -noupdate -divider "Datapath Internals"1
 add wave -noupdate tb_butterfly/DUT/DATAPATH/*
 
 add wave -noupdate -divider "Control Unit"
-add wave -noupdate tb_FMC/DUT/CONTROL_UNIT/*
+add wave -noupdate tb_butterfly/DUT/CONTROL_UNIT/*
 
 
 run 200 ns
