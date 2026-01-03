@@ -153,7 +153,7 @@ begin
     assert (lsb + n <   i)  report "Errore: n + lsb deve essere < di i" severity failure;
     assert (lsb - m >= -f) report "Errore: lsb - m deve essere >= di -f" severity failure;
 
-    integer_part <= unsigned(data_in(lsb + n - 1 downto lsb));
+    integer_part <= unsigned(to_slv(data_in(lsb + n - 1 downto lsb)));
     fractional_part <= unsigned(to_slv(data_in(lsb - 1 downto lsb - m)));
 
     process(cs, data_in, integer_part, fractional_part)
