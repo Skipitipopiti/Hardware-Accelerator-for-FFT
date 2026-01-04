@@ -11,18 +11,19 @@ entity butterfly_dp is
     port (
         clk       : in  std_logic;
         arst      : in  std_logic;
+
         rf_en     : in  std_logic_vector(0 to 3);
         r_sum_en  : in  std_logic;
         r_ar_en   : in  std_logic;
         r_ai_en   : in  std_logic;
 
-        SF_2H_1L : in  std_logic;  -- fattore di scala
+        SF_2H_1L  : in  std_logic; -- fattore di scala
 
-        sel_sum    : in  std_logic;  -- '1' per somma, '0' per sottrazione
-        sel_shift  : in  std_logic;  -- '0' per moltiplicazione, '1' per shift
-        sel_Ax     : in  std_logic;
-        sel_Bx     : in  std_logic;
-        sel_Wx     : in  std_logic;
+        sel_sum   : in  std_logic; -- '1' per somma, '0' per sottrazione
+        sel_shift : in  std_logic; -- '0' per moltiplicazione, '1' per shift
+        sel_Ax    : in  std_logic;
+        sel_Bx    : in  std_logic;
+        sel_Wx    : in  std_logic;
 
         sel_in_bus  : in  std_logic_vector(0 to 2);
         sel_out_bus : in  std_logic_vector(0 to 2);
@@ -71,12 +72,11 @@ architecture Behavioral of butterfly_dp is
     -- Sommatore e sottrattore con ingressi e uscita in comune
     signal sum_in1, sum_in2 : sfixed(HI downto LO); -- 2N + 1
     signal add_out, sub_out : sfixed(HI+1 downto LO); -- 2N + 2
-    signal sum_out      : sfixed(HI downto LO); -- 2N + 1
-    signal sum_out_to_round : sfixed(HI downto LO); -- 2N + 1
+    signal sum_out : sfixed(HI downto LO); -- 2N + 1
 
     signal rounder_in      : sfixed(HI downto LO);
-    signal rounder_raw_out : sfixed(HI downto 1-N);
-    signal rounder_out     : sfixed(HI downto LO);
+    signal rounder_out     : sfixed(HI downto 1-N);
+    signal rounder_out_ext : sfixed(HI downto LO);
 
     -- R_SUM: sum register
     alias r_sum_in  : sfixed(HI downto LO) is sum_out;
@@ -122,11 +122,11 @@ begin
     rf_in(3) <= in_bus(2); -- sia rf(2) che rf(3) sono connessi allo stesso bus
     
     in_bus(0) <= resize(B, HI, LO)
-        when sel_in_bus(0) = '0' else rounder_out; -- Br o B'r
+        when sel_in_bus(0) = '0' else rounder_out_ext; -- Br o B'r
     in_bus(1) <= resize(B, HI, LO)
         when sel_in_bus(1) = '0' else resize(mul_out, HI, LO); -- Bi o prodotti
     in_bus(2) <= resize(mul_shift_out, HI, LO)
-        when sel_in_bus(2) = '0' else rounder_out; -- 2Ar/2Ai o A'r/A'i/B'i
+        when sel_in_bus(2) = '0' else rounder_out_ext; -- 2Ar/2Ai o A'r/A'i/B'i
 
     -- OUT_BUS
     out_bus(0) <= rf_out(0) when sel_out_bus(0) = '0' else rf_out(2); -- Br/B'r o A'r/B'i
@@ -213,14 +213,14 @@ begin
         port map (
             cs => '1', -- TODO: controllare il CS dalla CU
             data_in  => rounder_in,
-            data_out => rounder_raw_out
+            data_out => rounder_out
         );
 
     -- Shift per tornare nella dinamica (-1, 1) in uscita. I primi 2 bit MSB,
     -- se l'algoritmo è corretto, sono sempre uguali al bit 0 di segno.
     -- In uscita, infatti, vengono presi i bit 0 downto 1-N.
-    with SF_2H_1L select rounder_out <=
-        shift_right(resize(rounder_raw_out, HI, LO), 1) when '0',
-        shift_right(resize(rounder_raw_out, HI, LO), 2) when others;
+    with SF_2H_1L select rounder_out_ext <=
+        shift_right(resize(rounder_out, HI, LO), 1) when '0',
+        shift_right(resize(rounder_out, HI, LO), 2) when others;
 
 end architecture Behavioral;

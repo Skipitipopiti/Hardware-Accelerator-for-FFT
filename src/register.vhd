@@ -16,7 +16,7 @@ end Reg;
 
 architecture Behavior of Reg is
 begin
-	process (clk, arst, en)
+	process (clk, arst)
     begin
 		if arst = '1' then
 			d_out <= (N-1 downto 0 => '0');
@@ -57,7 +57,7 @@ end RegSfixed;
 
 architecture Behavior of RegSfixed is
 begin
-	process (clk, arst, en)
+	process (clk, arst)
     begin
 		if arst = '1' then
 			d_out <= (HI downto LO => '0');
