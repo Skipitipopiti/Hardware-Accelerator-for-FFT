@@ -36,11 +36,8 @@ architecture Behavioral of butterfly_cu is
     type state_t is record
         step : step_t;
 
-        -- finish_cycle: flag per capire se manca ancora metà ciclo di calcolo
-        -- prima di andare al done
-        -- 0 = manca metà ciclo
-        -- 1 = ciclo completo (fine modalità continua)
-        finish_cycle : std_logic;
+        -- Indica se eseguire la prima o la seconda iterazione del ciclo (o entrambe)
+        first_half, second_half : std_logic;
     end record;
 
     signal current_state, next_state : state_t;
@@ -51,8 +48,9 @@ begin
     begin
         if arst = '1' then
             current_state <= (
-                step         => IDLE,
-                finish_cycle => '0'
+                step        => IDLE,
+                first_half  => '1',
+                second_half => '0'
             );
         elsif rising_edge(clk) then
             current_state <= next_state;
@@ -67,7 +65,8 @@ begin
 
         case current_state.step is
             when IDLE =>
-                next_state.finish_cycle <= '0';
+                next_state.first_half  <= '1';
+                next_state.second_half <= '0';
 
                 if start = '1' then
                     next_state.step <= S1;
@@ -83,14 +82,17 @@ begin
             when S5 =>
                 next_state.step <= S6;
             when S6 =>
-                if current_state.finish_cycle = '1' then
-                    next_state.step <= IDLE;
-                else
-                    next_state.step <= S1;
-                end if;
+                -- ricomincia se start = '1'
+                next_state.first_half <= start;
 
-                next_state.finish_cycle <= not start;
-            
+                -- prosegui con la seconda metà se la prima è stata eseguita
+                next_state.second_half <= current_state.first_half;
+
+                if start = '1' or current_state.first_half = '1' then
+                    next_state.step <= S1;
+                else
+                    next_state.step <= IDLE;
+                end if;
             when others =>
                 next_state.step <= IDLE;
         end case;
@@ -119,22 +121,22 @@ begin
 
         case current_state.step is
             when IDLE =>
-                -- Ar e Br
+                -- input: Ar e Br
                 r_ar_en <= '1';
                 rf_en(0) <= '1'; -- Br
 
             when S1 =>
-                -- Wr x Br
-                sel_Wx <= '0'; -- Wr
-                sel_Bx <= '0'; -- Br
+                if current_state.first_half = '1' then
+                    -- Wr x Br
+                    sel_Wx <= '0'; -- Wr
+                    sel_Bx <= '0'; -- Br
 
-                -- input: Ai e Bi
-                r_ai_en <= '1';
-                rf_en(1) <= '1'; -- Bi
+                    -- input: Ai e Bi
+                    r_ai_en <= '1';
+                    rf_en(1) <= '1'; -- Bi
+                end if;
 
-                --
-
-                if current_state.finish_cycle = '1' then
+                if current_state.second_half = '1' then
                     -- S4 + WiBr
                     sel_sum <= '0'; -- somma
                     sel_sum_in1 <= "11"; -- in1: somme
@@ -148,13 +150,13 @@ begin
                 end if;
 
             when S2 =>
-                -- Bi x Wr
-                sel_Wx <= '0';
-                sel_Bx <= '1';
+                if current_state.first_half = '1' then
+                    -- Bi x Wr
+                    sel_Wx <= '0';
+                    sel_Bx <= '1';
+                end if;
 
-                --
-
-                if current_state.finish_cycle = '1' then
+                if current_state.second_half = '1' then
                     -- 2Ar - S2
                     sel_sum_in1 <= "10"; -- 2Ar/2Ai
                     sel_out_bus(2) <= '0'; -- Ar
@@ -168,16 +170,16 @@ begin
                 end if;
 
             when S3 =>
-                -- Bi x Wi
-                sel_Wx <= '1';
-                sel_Bx <= '1';
+                if current_state.first_half = '1' then
+                    -- Bi x Wi
+                    sel_Wx <= '1';
+                    sel_Bx <= '1';
 
-                sel_in_bus(1) <= '1'; -- prodotti
-                rf_en(1) <= '1'; -- WrBr
+                    sel_in_bus(1) <= '1'; -- prodotti
+                    rf_en(1) <= '1'; -- WrBr
+                end if;
 
-                --
-
-                if current_state.finish_cycle = '1' then
+                if current_state.second_half = '1' then
                     -- 2Ai - S5
                     sel_sum_in1 <= "10"; -- 2Ar/2Ai
                     sel_out_bus(2) <= '1'; -- Ai
@@ -191,20 +193,20 @@ begin
                 end if;
 
             when S4 =>
-                -- Br x Wi
-                sel_Wx <= '1';
-                sel_Bx <= '0';
+                if current_state.first_half = '1' then
+                    -- Br x Wi
+                    sel_Wx <= '1';
+                    sel_Bx <= '0';
 
-                -- Ar + WrBr
-                sel_sum_in1 <= "00"; -- Ar
-                sel_sum_in2 <= '0'; -- prodotti
+                    -- Ar + WrBr
+                    sel_sum_in1 <= "00"; -- Ar
+                    sel_sum_in2 <= '0'; -- prodotti
 
-                sel_in_bus(1) <= '1'; -- prodotti
-                rf_en(1) <= '1'; -- WrBi
+                    sel_in_bus(1) <= '1'; -- prodotti
+                    rf_en(1) <= '1'; -- WrBi
+                end if;
 
-                --
-
-                if current_state.finish_cycle = '1' then
+                if current_state.second_half = '1' then
                     sel_sum <= '0'; -- sottrazione
                     r_sum_en <= '1'; -- S6
 
@@ -213,23 +215,23 @@ begin
                 end if;
 
             when S5 =>
-                -- Ai + WrBi
-                sel_sum_in1 <= "01"; -- Ai
-                sel_sum_in2 <= '0'; -- prodotti
+                if current_state.first_half = '1' then
+                    -- Ai + WrBi
+                    sel_sum_in1 <= "01"; -- Ai
+                    sel_sum_in2 <= '0'; -- prodotti
 
-                -- 2*Ar
-                sel_shift <= '1';
-                sel_Ax <= '0'; -- Ar
+                    -- 2*Ar
+                    sel_shift <= '1';
+                    sel_Ax <= '0'; -- Ar
 
-                sel_sum <= '1'; -- somma
-                r_sum_en <= '1'; -- S1
+                    sel_sum <= '1'; -- somma
+                    r_sum_en <= '1'; -- S1
 
-                sel_in_bus(1) <= '1'; -- prodotto
-                rf_en(1) <= '1'; -- WiBi
+                    sel_in_bus(1) <= '1'; -- prodotto
+                    rf_en(1) <= '1'; -- WiBi
+                end if;
 
-                --
-
-                if current_state.finish_cycle = '1' then
+                if current_state.second_half = '1' then
                     done <= '1';
 
                     -- output: A'r e B'r
@@ -241,31 +243,32 @@ begin
                 end if;
 
             when S6 =>
-                -- 2*Ai
-                sel_shift <= '1';
-                sel_Ax <= '1'; -- Ai
+                -- input: Ar e Br
+                r_ar_en <= '1';
+                rf_en(0) <= '1'; -- Br
 
-                -- S1 - WiBi
-                sel_sum_in1 <= "11"; -- somme
-                sel_sum_in2 <= '0'; -- prodotti
+                if current_state.first_half = '1' then
+                    -- 2*Ai
+                    sel_shift <= '1';
+                    sel_Ax <= '1'; -- Ai
 
-                sel_in_bus(1) <= '1'; -- prodotto
-                rf_en(1) <= '1'; -- WiBr
+                    -- S1 - WiBi
+                    sel_sum_in1 <= "11"; -- somme
+                    sel_sum_in2 <= '0'; -- prodotti
 
-                sel_sum <= '1'; -- addizione
-                r_sum_en <= '1'; -- S4
+                    sel_in_bus(1) <= '1'; -- prodotto
+                    rf_en(1) <= '1'; -- WiBr
 
-                rf_en(2) <= '1'; -- 2Ar
+                    sel_sum <= '1'; -- addizione
+                    r_sum_en <= '1'; -- S4
 
-                --
+                    rf_en(2) <= '1'; -- 2Ar
+                end if;
 
-                if current_state.finish_cycle = '1' then
+                if current_state.second_half = '1' then
                     -- output: A'i e B'i
                     sel_out_bus(2) <= '1'; -- A'i
                     sel_out_bus(0) <= '1'; -- B'i
-
-                    r_ar_en <= '1'; -- Ar
-                    rf_en(0) <= '1'; -- Br
                 end if;
 
             when others =>
