@@ -22,8 +22,23 @@ architecture Behavioral of tb_butterfly is
     signal Ap       : sfixed(0 downto 1-N);
     signal Bp       : sfixed(0 downto 1-N);
 
+    signal Ares, Bres : sfixed(2 downto 1-N);
+
     constant CLK_PERIOD : time := 10 ns;
+    constant DELAY : time := CLK_PERIOD/10;
+
 begin
+    process(SF_2H_1L, Ap, Bp)
+    begin
+        if SF_2H_1L = '0' then
+            Ares <= shift_left(resize(Ap, Ares'high, Ares'low), 1);
+            Bres <= shift_left(resize(Bp, Bres'high, Bres'low), 1);
+        else
+            Ares <= shift_left(resize(Ap, Ares'high, Ares'low), 2);
+            Bres <= shift_left(resize(Bp, Bres'high, Bres'low), 2);
+        end if;
+    end process;
+
     -- Clock generation
     clk_process : process
     begin
@@ -54,23 +69,29 @@ begin
     stim_proc: process
     begin
         -- Release reset
-        wait for 3/2*CLK_PERIOD;
+        wait until falling_edge(clk);
+        wait for DELAY;
         arst <= '0';
-        wait for CLK_PERIOD/2;
 
         -- Apply test vectors
-        A <= to_sfixed(0.5, 0, 1-N);
+        wait until rising_edge(clk);
+        wait for DELAY;
+        A <= to_sfixed(0.5,  0, 1-N);
         B <= to_sfixed(0.25, 0, 1-N);
-        SF_2H_1L <= '0'; -- No scaling
+        SF_2H_1L <= '1'; -- 4x scaling
+        start <= '1';
 
         -- Start operation
-        start <= '1';
-        wait for CLK_PERIOD;
+        wait until rising_edge(clk);
+        wait for DELAY;
+        A <= to_sfixed(-0.5, 0, 1-N);
+        B <= to_sfixed(0, 0, 1-N);
         start <= '0';
 
         -- Wait for done signal
         wait until done = '1';
-        wait for CLK_PERIOD;
+        wait for CLK_PERIOD*2;
 
+        wait;
     end process;
 end architecture Behavioral;

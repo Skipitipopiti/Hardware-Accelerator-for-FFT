@@ -58,71 +58,62 @@ architecture Behavioral of butterfly_dp is
     signal in_bus  : num_array_t(0 to 2);
     signal out_bus : num_array_t(0 to 3);
 
-    -- R_Ar: Ar register
-    signal r_ar_in  : sfixed(0 downto 1-N);
-    signal r_ar_out : sfixed(0 downto 1-N);
+    -- R_Ar: Ar register, R_Ai: Ai register
+    alias  r_ar_in : sfixed(0 downto 1-N) is A;
+    alias  r_ai_in : sfixed(0 downto 1-N) is A;
+    signal r_ar_out, r_ai_out : sfixed(0 downto 1-N);
 
-    -- R_Ai: Ai register
-    signal r_ai_in  : sfixed(0 downto 1-N);
-    signal r_ai_out : sfixed(0 downto 1-N);
-
-    signal r_sum_in, r_sum_out : sfixed(HI downto LO);
-
+    -- Moltiplicatore
     signal mul_in1, mul_in2 : sfixed(0 downto 1-N);
     signal mul_out : sfixed(0 downto LO);
     signal mul_shift_out : sfixed(1 downto 1-N);
-
     
+    -- Sommatore e sottrattore con ingressi e uscita in comune
     signal sum_in1, sum_in2 : sfixed(HI downto LO); -- 2N + 1
     signal add_out, sub_out : sfixed(HI+1 downto LO); -- 2N + 2
-    signal sum_out_raw      : sfixed(HI downto LO); -- 2N + 1
+    signal sum_out      : sfixed(HI downto LO); -- 2N + 1
     signal sum_out_to_round : sfixed(HI downto LO); -- 2N + 1
 
-    signal rounder_in      : sfixed(0 downto LO);
-    signal rounder_raw_out : sfixed(0 downto 1-N);
+    signal rounder_in      : sfixed(HI downto LO);
+    signal rounder_raw_out : sfixed(HI downto 1-N);
     signal rounder_out     : sfixed(HI downto LO);
 
+    -- R_SUM: sum register
+    alias r_sum_in  : sfixed(HI downto LO) is sum_out;
+    alias r_sum_out : sfixed(HI downto LO) is rounder_in;
+
 begin
-    -- Registers
-    R_SUM: entity work.Reg
-        generic map ( N => INTERNAL_WIDTH )
+    -- Registri
+    R_AR: entity work.RegSfixed
+        generic map ( HI => 0, LO => 1 - N )
         port map (
-            arst => arst,
-            clk  => clk,
-            en   => r_sum_en,
-
-            d_in => to_slv(r_sum_in),
-            sfixed(d_out) => r_sum_out
+            clk   => clk,
+            arst  => arst,
+            en    => r_ar_en,
+            d_in  => r_ar_in,
+            d_out => r_ar_out
         );
 
-    r_sum_in <= sum_out_raw;
-
-    r_ar_in <= A;
-    R_AR: entity work.Reg
-        generic map ( N => N )
+    R_AI: entity work.RegSfixed
+        generic map ( HI => 0, LO => 1 - N )
         port map (
-            arst => arst,
-            clk  => clk,
-            en   => r_ar_en,
-
-            d_in => to_slv(r_ar_in),
-            sfixed(d_out) => r_ar_out
+            clk   => clk,
+            arst  => arst,
+            en    => r_ai_en,
+            d_in  => r_ai_in,
+            d_out => r_ai_out
         );
 
-    r_ai_in <= A;
-    R_AI: entity work.Reg
-        generic map ( N => N )
+    R_SUM: entity work.RegSfixed
+        generic map ( HI => HI, LO => LO )
         port map (
-            arst => arst,
-            clk  => clk,
-            en   => r_ai_en,
-
-            d_in => to_slv(r_ai_in),
-            sfixed(d_out) => r_ai_out
+            clk   => clk,
+            arst  => arst,
+            en    => r_sum_en,
+            d_in  => r_sum_in,
+            d_out => r_sum_out
         );
-    
-    Ax <= r_ar_out when sel_Ax = '0' else r_ai_out;
-    
+
     -- Collegamento con i bus
     -- IN_BUS
     rf_in(0) <= in_bus(0);
@@ -156,6 +147,7 @@ begin
         out_bus(1) when '0', -- Bi o prodotti
         out_bus(3) when others; -- somme
     
+    -- Se l'algoritmo è corretto, i bit (2 downto 1) sono pari al bit di segno (bit 0)
     Ap <= out_bus(2)(0 downto 1-N);
     Bp <= out_bus(0)(0 downto 1-N);
 
@@ -174,6 +166,7 @@ begin
         end if;
     end process;
 
+    Ax <= r_ar_out when sel_Ax = '0' else r_ai_out;
     mul_in1 <= Ax when sel_shift = '1' else Br_or_Bi;
     mul_in2 <= Wr when sel_Wx = '0' else Wi;
     MUL_INST: entity work.Multiplier
@@ -206,21 +199,13 @@ begin
             SUB => sub_out
         );
 
-    sum_out_raw <= add_out(sum_out_raw'high downto sum_out_raw'low) when sel_sum = '1'
-        else sub_out(sum_out_raw'high downto sum_out_raw'low);
-
     -- Scartiamo il bit di overflow (il parallelismo garantisce che non si verifichi)
-    with SF_2H_1L select sum_out_to_round <=
-        shift_right(sum_out_raw, 1) when '0',
-        shift_right(sum_out_raw, 2) when others;
-
-    -- Collegamento al rounder. I bit possono essere scartati perché l'algoritmo
-    -- garantisce che non si verifichi overflow
-    rounder_in <= sum_out_to_round(0 downto LO);
+    sum_out <= add_out(sum_out'high downto sum_out'low) when sel_sum = '1'
+        else sub_out(sum_out'high downto sum_out'low);
 
     ROUNDER_INST: entity work.rom_rounder
         generic map (
-            i => 1,
+            i => HI+1,
             f => -LO,
             lsb => 1 - N,
             n => RR_N, m => RR_M
@@ -231,6 +216,11 @@ begin
             data_out => rounder_raw_out
         );
 
-    rounder_out <= resize(rounder_raw_out, HI, LO);
+    -- Shift per tornare nella dinamica (-1, 1) in uscita. I primi 2 bit MSB,
+    -- se l'algoritmo è corretto, sono sempre uguali al bit 0 di segno.
+    -- In uscita, infatti, vengono presi i bit 0 downto 1-N.
+    with SF_2H_1L select rounder_out <=
+        shift_right(resize(rounder_raw_out, HI, LO), 1) when '0',
+        shift_right(resize(rounder_raw_out, HI, LO), 2) when others;
 
 end architecture Behavioral;
