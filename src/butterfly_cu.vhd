@@ -134,16 +134,18 @@ begin
 
                 --
 
-                -- S4 + WiBr
-                sel_sum <= '0'; -- somma
-                sel_sum_in1 <= "11"; -- in1: somme
-                sel_sum_in2 <= '0'; -- in2: prodotti
+                if current_state.finish_cycle = '1' then
+                    -- S4 + WiBr
+                    sel_sum <= '0'; -- somma
+                    sel_sum_in1 <= "11"; -- in1: somme
+                    sel_sum_in2 <= '0'; -- in2: prodotti
 
-                sel_in_bus(2) <= '0'; -- shift
-                rf_en(3) <= '1'; -- 2Ai
+                    sel_in_bus(2) <= '0'; -- shift
+                    rf_en(3) <= '1'; -- 2Ai
 
-                sel_sum <= '0'; -- sottrazione
-                r_sum_en <= '1'; -- S2
+                    sel_sum <= '0'; -- sottrazione
+                    r_sum_en <= '1'; -- S2
+                end if;
 
             when S2 =>
                 -- Bi x Wr
@@ -152,16 +154,18 @@ begin
 
                 --
 
-                -- 2Ar - S2
-                sel_sum_in1 <= "10"; -- 2Ar/2Ai
-                sel_out_bus(2) <= '0'; -- Ar
-                sel_sum_in2 <= '1'; -- somme
+                if current_state.finish_cycle = '1' then
+                    -- 2Ar - S2
+                    sel_sum_in1 <= "10"; -- 2Ar/2Ai
+                    sel_out_bus(2) <= '0'; -- Ar
+                    sel_sum_in2 <= '1'; -- somme
 
-                sel_sum <= '1'; -- somma
-                r_sum_en <= '1'; -- S5
+                    sel_sum <= '1'; -- somma
+                    r_sum_en <= '1'; -- S5
 
-                sel_in_bus(2) <= '1'; -- rounded A'r
-                rf_en(2) <= '1'; -- A'r
+                    sel_in_bus(2) <= '1'; -- rounded A'r
+                    rf_en(2) <= '1'; -- A'r
+                end if;
 
             when S3 =>
                 -- Bi x Wi
@@ -173,16 +177,18 @@ begin
 
                 --
 
-                -- 2Ai - S5
-                sel_sum_in1 <= "10"; -- 2Ar/2Ai
-                sel_out_bus(2) <= '1'; -- Ai
-                sel_sum_in2 <= '1'; -- somme
+                if current_state.finish_cycle = '1' then
+                    -- 2Ai - S5
+                    sel_sum_in1 <= "10"; -- 2Ar/2Ai
+                    sel_out_bus(2) <= '1'; -- Ai
+                    sel_sum_in2 <= '1'; -- somme
 
-                sel_in_bus(2) <= '1'; -- rounder out
-                rf_en(3) <= '1'; -- A'i
+                    sel_in_bus(2) <= '1'; -- rounder out
+                    rf_en(3) <= '1'; -- A'i
 
-                sel_sum <= '0'; -- sottrazione
-                r_sum_en <= '1'; -- S3
+                    sel_sum <= '0'; -- sottrazione
+                    r_sum_en <= '1'; -- S3
+                end if;
 
             when S4 =>
                 -- Br x Wi
@@ -198,11 +204,13 @@ begin
 
                 --
 
-                sel_sum <= '0'; -- sottrazione
-                r_sum_en <= '1'; -- S6
+                if current_state.finish_cycle = '1' then
+                    sel_sum <= '0'; -- sottrazione
+                    r_sum_en <= '1'; -- S6
 
-                sel_in_bus(0) <= '1'; -- rounder out
-                rf_en(0) <= '1'; -- B'r
+                    sel_in_bus(0) <= '1'; -- rounder out
+                    rf_en(0) <= '1'; -- B'r
+                end if;
 
             when S5 =>
                 -- Ai + WrBi
@@ -216,16 +224,20 @@ begin
                 sel_sum <= '1'; -- somma
                 r_sum_en <= '1'; -- S1
 
-                rf_en(2) <= '1'; -- WiBi
+                rf_en(1) <= '1'; -- WiBi
 
                 --
 
-                -- output: A'r e B'r
-                sel_out_bus(2) <= '0'; -- A'r
-                sel_out_bus(0) <= '0'; -- B'r
+                if current_state.finish_cycle = '1' then
+                    done <= '1';
 
-                sel_in_bus(2) <= '1'; -- rounder out
-                rf_en(2) <= '1'; -- rounded B'i
+                    -- output: A'r e B'r
+                    sel_out_bus(2) <= '0'; -- A'r
+                    sel_out_bus(0) <= '0'; -- B'r
+
+                    sel_in_bus(2) <= '1'; -- rounder out
+                    rf_en(2) <= '1'; -- rounded B'i
+                end if;
 
             when S6 =>
                 -- 2*Ai
@@ -246,12 +258,14 @@ begin
 
                 --
 
-                -- output: A'r e B'r
-                sel_out_bus(2) <= '1'; -- A'i
-                sel_out_bus(0) <= '1'; -- B'i
+                if current_state.finish_cycle = '1' then
+                    -- output: A'i e B'i
+                    sel_out_bus(2) <= '1'; -- A'i
+                    sel_out_bus(0) <= '1'; -- B'i
 
-                r_ar_en <= '1'; -- Ar
-                rf_en(0) <= '1'; -- Br
+                    r_ar_en <= '1'; -- Ar
+                    rf_en(0) <= '1'; -- Br
+                end if;
 
             when others =>
                 null;
