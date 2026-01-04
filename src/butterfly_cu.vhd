@@ -224,6 +224,7 @@ begin
                 sel_sum <= '1'; -- somma
                 r_sum_en <= '1'; -- S1
 
+                sel_in_bus(1) <= '1'; -- prodotto
                 rf_en(1) <= '1'; -- WiBi
 
                 --

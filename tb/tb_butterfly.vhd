@@ -15,10 +15,10 @@ architecture Behavioral of tb_butterfly is
     signal start    : std_logic := '0';
     signal done     : std_logic;
     signal SF_2H_1L : std_logic := '0';
-    signal A        : sfixed(0 downto 1-N) := to_sfixed(0.0, 0, 1-N);
-    signal B        : sfixed(0 downto 1-N) := to_sfixed(0.0, 0, 1-N);
-    signal Wr       : sfixed(0 downto 1-N) := to_sfixed(0.70710678, 0, 1-N); -- cos(pi/4)
-    signal Wi       : sfixed(0 downto 1-N) := to_sfixed(-0.70710678, 0, 1-N); -- -sin(pi/4)
+    signal A        : sfixed(0 downto 1-N);
+    signal B        : sfixed(0 downto 1-N);
+    signal Wr       : sfixed(0 downto 1-N);
+    signal Wi       : sfixed(0 downto 1-N);
     signal Ap       : sfixed(0 downto 1-N);
     signal Bp       : sfixed(0 downto 1-N);
 
@@ -71,21 +71,23 @@ begin
         -- Release reset
         wait until falling_edge(clk);
         wait for DELAY;
+        Wr <= to_sfixed( 0.70711, 0, 1-N);  -- cos(?/4)
+        Wi <= to_sfixed(-0.70711, 0, 1-N); -- -sin(?/4)
         arst <= '0';
 
         -- Apply test vectors
         wait until rising_edge(clk);
         wait for DELAY;
-        A <= to_sfixed(0.5,  0, 1-N);
-        B <= to_sfixed(0.25, 0, 1-N);
+        A <= to_sfixed( 0.27885, 0, 1-N); --  cos(?/4)
+        B <= to_sfixed(-0.44994, 0, 1-N); -- -sin(?/4)
         SF_2H_1L <= '1'; -- 4x scaling
         start <= '1';
 
         -- Start operation
         wait until rising_edge(clk);
         wait for DELAY;
-        A <= to_sfixed(-0.5, 0, 1-N);
-        B <= to_sfixed(0, 0, 1-N);
+        A <= to_sfixed(-0.94998,  0, 1-N);
+        B <= to_sfixed(-0.55358, 0, 1-N);
         start <= '0';
 
         -- Wait for done signal
