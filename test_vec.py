@@ -55,7 +55,11 @@ def butterfly(A, B, W, scaling_factor):
     print(f"Output 2 (Bp scaled): {out2.real:.5f} + {out2.imag:.5f}j")
 
 if __name__ == "__main__":
-    random.seed(42)
+    # Prendi seed dall'esterno
+    seed = int(input("Seed: "))
+
+    # Imposta il seed per la riproducibilità
+    random.seed(seed)
 
     # Genera vettore di test
     A, B, W = generate_test_vector(pi/4)
