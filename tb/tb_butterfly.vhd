@@ -74,25 +74,25 @@ begin
         Wr <= to_sfixed( 0.70711, 0, 1-N);  -- cos(?/4)
         Wi <= to_sfixed(-0.70711, 0, 1-N); -- -sin(?/4)
         arst <= '0';
+        SF_2H_1L <= '1'; -- 4x scaling perché l'input non proviene da un'altra butterfly
 
         -- Apply test vectors
         wait until rising_edge(clk);
         wait for DELAY;
-        A <= to_sfixed( 0.27885, 0, 1-N); --  cos(?/4)
-        B <= to_sfixed(-0.44994, 0, 1-N); -- -sin(?/4)
-        SF_2H_1L <= '1'; -- 4x scaling
-        start <= '1';
+        start <= '1', '0' after CLK_PERIOD, '1' after 6*CLK_PERIOD, '0' after 7*CLK_PERIOD;
+        A <= to_sfixed( 0.27885, 0, 1-N), to_sfixed(-0.94998, 0, 1-N) after CLK_PERIOD, -- Seed: 42 
+            to_sfixed(-0.73127, 0, 1-N) after 6*CLK_PERIOD, to_sfixed( 0.69487, 0, 1-N) after 7*CLK_PERIOD; -- Seed: -1
 
-        -- Start operation
-        wait until rising_edge(clk);
-        wait for DELAY;
-        A <= to_sfixed(-0.94998,  0, 1-N);
-        B <= to_sfixed(-0.55358, 0, 1-N);
-        start <= '0';
+        B <= to_sfixed(-0.44994, 0, 1-N), to_sfixed(-0.55358, 0, 1-N) after CLK_PERIOD, -- Seed: 42
+            to_sfixed( 0.52755, 0, 1-N) after 6*CLK_PERIOD, to_sfixed(-0.48986, 0, 1-N) after 7*CLK_PERIOD; -- Seed: -1
 
-        -- Wait for done signal
+        -- Wait for first done signal
         wait until done = '1';
-        wait for CLK_PERIOD*2;
+        report "1st done reached";
+
+        -- Wait for second done signal
+        wait until done = '1';
+        report "2nd done reached";
 
         wait;
     end process;
