@@ -65,14 +65,12 @@ begin
             Bp => Bp
         );
     
-    CONTROL_UNIT: entity work.butterfly_cu
+    CONTROL_UNIT: entity work.butterfly_cu(Microprogrammed)
         port map (
             clk      => clk,
             arst     => arst,
             start    => start,
             done     => done,
-
-            SF_2H_1L => SF_2H_1L,
 
             rf_en    => rf_en,
             r_sum_en => r_sum_en,

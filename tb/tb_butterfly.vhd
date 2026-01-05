@@ -71,10 +71,10 @@ begin
         -- Release reset
         wait until falling_edge(clk);
         wait for DELAY;
-        Wr <= to_sfixed( 0.70711, 0, 1-N);  -- cos(?/4)
-        Wi <= to_sfixed(-0.70711, 0, 1-N); -- -sin(?/4)
+        Wr <= to_sfixed( 0.70711, 0, 1-N);  -- cos(pi/4)
+        Wi <= to_sfixed(-0.70711, 0, 1-N); -- -sin(pi/4)
         arst <= '0';
-        SF_2H_1L <= '1'; -- 4x scaling perché l'input non proviene da un'altra butterfly
+        SF_2H_1L <= '1'; -- 4x scaling perchï¿½ l'input non proviene da un'altra butterfly
 
         -- Apply test vectors
         wait until rising_edge(clk);
