@@ -1,7 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
--- Simple generic register with enable and asynchronous reset
+-- Registro semplice generico con Enable e Reset Asincrono
 entity Reg is
     generic (N : natural; ON_RISING_EDGE : boolean := true);
 	port
@@ -42,7 +42,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.fixed_pkg.all;
 
--- Register with enable and asynchronous reset for sfixed type
+-- Registro con Enable e Reset Asincrono per sfixed
 entity RegSfixed is
     generic (HI, LO: integer; ON_RISING_EDGE : boolean := true);
 	port

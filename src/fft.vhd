@@ -50,7 +50,7 @@ use ieee.fixed_pkg.all;
 use ieee.fixed_float_types.all;
 use work.fft_pkg.all;
 
--- Unit‡ FFT
+-- Unit√† FFT
 entity fft is
     generic ( N : natural := 24; STAGES : natural := 4 );
     port (

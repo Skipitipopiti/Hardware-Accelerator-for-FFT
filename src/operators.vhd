@@ -166,21 +166,22 @@ begin
         if cs = '0' then
             N_Temp := (others => '0'); 
         else
-            -- < 0.5   -> arrotonda x difetto
+            -- < 0.5   -> arrotonda per difetto
             if fractional_part(m - 1) = '0' then
                 round_up := false;
 
             elsif to_integer(unsigned(fractional_part(m - 2 downto 0))) /= 0 then
-                -- > 0.5   -> arrotonda x eccesso !!!!! m>1 xk se m=1 non esistono altri bit che devo controllare
+                -- > 0.5   -> arrotonda per eccesso ! m>1 perché se m=1 
+                -- non esistono altri bit che devo controllare
                 round_up := true;
             else
                 --  = 0.5  ->  vedo se pari o dispari
-                -- dispari -> arrotonda x eccesso
+                -- dispari -> arrotonda per eccesso
                 round_up := integer_part(0) = '1';
             end if;
         end if;
 
-        -- controllo x saturazione
+        -- controllo per saturazione
         if round_up then
             if integer_part = (n-1 downto 0 => '1') then 
                 N_Temp := integer_part;

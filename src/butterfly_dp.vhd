@@ -147,7 +147,7 @@ begin
         out_bus(1) when '0', -- Bi o prodotti
         out_bus(3) when others; -- somme
     
-    -- Se l'algoritmo è corretto, i bit (2 downto 1) sono pari al bit di segno (bit 0)
+    -- Se l'algoritmo Ã¨ corretto, i bit (2 downto 1) sono pari al bit di segno (bit 0)
     Ap <= out_bus(2)(0 downto 1-N);
     Bp <= out_bus(0)(0 downto 1-N);
 
@@ -217,7 +217,7 @@ begin
         );
 
     -- Shift per tornare nella dinamica (-1, 1) in uscita. I primi 2 bit MSB,
-    -- se l'algoritmo è corretto, sono sempre uguali al bit 0 di segno.
+    -- se l'algoritmo Ã¨ corretto, sono sempre uguali al bit 0 di segno.
     -- In uscita, infatti, vengono presi i bit 0 downto 1-N.
     with SF_2H_1L select rounder_out_ext <=
         shift_right(resize(rounder_out, HI, LO), 1) when '0',

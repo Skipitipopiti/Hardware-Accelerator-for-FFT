@@ -1,3 +1,18 @@
 [libraries]
 
-lib.files = [ "src/*", "tb/*" ]
+lib.files = [
+"src\\register.vhd",
+"src\\operators.vhd",
+"src\\fft.vhd",
+"src\\butterfly_sequencer.vhd",
+"src\\butterfly_dp.vhd",
+"src\\butterfly_cu.vhd",
+"src\\butterfly_command.vhd",
+"src\\butterfly.vhd",
+"tb\\tb_multiplier.vhd",
+"tb\\tb_reg.vhd",
+"tb\\tb_rom_rounder.vhd",
+"tb\\tb_butterfly.vhd",
+"tb\\tb_adder.vhd",
+"tb\\tb_subtractor.vhd",
+]
