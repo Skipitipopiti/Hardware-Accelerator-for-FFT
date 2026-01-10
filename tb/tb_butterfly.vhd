@@ -39,7 +39,7 @@ begin
         end if;
     end process;
 
-    -- Clock generation
+    -- Generazione del clock
     clk_process : process
     begin
         clk <= '0';
@@ -48,7 +48,7 @@ begin
         wait for CLK_PERIOD / 2;
     end process;
 
-    -- DUT instantiation
+    -- Istanziamento DUT 
     DUT: entity work.butterfly
         generic map ( N => N )
         port map (
@@ -65,7 +65,7 @@ begin
             Bp       => Bp
         );
 
-    -- Stimulus process
+    -- process stimulus
     stim_proc: process
     begin
         -- Release reset
@@ -76,7 +76,7 @@ begin
         arst <= '0';
         SF_2H_1L <= '1'; -- 4x scaling perché l'input non proviene da un'altra butterfly
 
-        -- Apply test vectors
+        -- Applica vettori di test
         wait until rising_edge(clk);
         wait for DELAY;
         start <= '1', '0' after CLK_PERIOD, '1' after 6*CLK_PERIOD, '0' after 7*CLK_PERIOD;
@@ -86,11 +86,11 @@ begin
         B <= to_sfixed(-0.44994, 0, 1-N), to_sfixed(-0.55358, 0, 1-N) after CLK_PERIOD, -- Seed: 42
             to_sfixed( 0.52755, 0, 1-N) after 6*CLK_PERIOD, to_sfixed(-0.48986, 0, 1-N) after 7*CLK_PERIOD; -- Seed: -1
 
-        -- Wait for first done signal
+        -- Aspetta il primo done
         wait until done = '1';
         report "1st done reached";
 
-        -- Wait for second done signal
+        -- Aspetta il secondo done
         wait until done = '1';
         report "2nd done reached";
 
