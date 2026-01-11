@@ -29,7 +29,6 @@ package body fft_pkg is
     -- TODO: testare
     function next_index(constant current_index : natural; constant stages : natural) return natural is
         variable current_reversed : unsigned(stages-1 downto 0);
-        variable sum_with_carry : unsigned(stages downto 0);
         variable sum : unsigned(stages - 1 downto 0);
     begin
         if stages = 0 then
@@ -39,8 +38,7 @@ package body fft_pkg is
         current_reversed := reverse_array(to_unsigned(current_index, stages));
         
         -- somma 1 con reverse carry (ignora overflow)
-        sum_with_carry := unsigned(current_reversed + 1);
-        sum := sum_with_carry(sum'range);
+        sum := unsigned(current_reversed + 1);
         sum := reverse_array(sum);
 
         return to_integer(sum);
@@ -85,7 +83,7 @@ architecture Behavioral of fft is
 
     -- Uscite butterfly
     signal butterfly_out : fft_signal_array_t(0 to STAGES - 1)(0 to 2**STAGES - 1)(0 downto 1-N);
-    signal butterfly_dones : slv_array_t(0 to STAGES - 1)(0 to 2**STAGES - 1);
+    signal butterfly_dones : slv_array_t(0 to STAGES - 1)(0 to 2**(STAGES-1) - 1);
     signal butterfly_done : std_logic_vector(0 to STAGES - 1);
 
     signal SF_2H_1L : std_logic_vector(0 to STAGES - 1);
@@ -93,13 +91,14 @@ architecture Behavioral of fft is
 begin
     butterfly_in(0) <= data_in;
     butterfly_start(0) <= start;
-    done <= butterfly_start(STAGES); -- oppure butterfly_done(STAGES-1);
+    done <= butterfly_start(STAGES);
 
-    SF_2H_1L(0) <= '0';
+    SF_2H_1L(0) <= '1';
     SF_2H_1L(1 to STAGES-1) <= (others => '0');
 
     STAGES_INST:
     for stage_index in 0 to STAGES-1 generate
+        -- Il prodotto n° butterfly/blocco * n° blocchi/stadio è costante (STAGES/2 butterfly/stadio)
         constant N_BLOCKS : natural := 2**stage_index;
         constant N_BUTTERFLIES_PER_BLOCK : natural := 2**(STAGES-1) / N_BLOCKS;
     begin
@@ -109,7 +108,6 @@ begin
             constant k : natural := next_index(blk_index, stage_index) * N_BUTTERFLIES_PER_BLOCK;
             constant W : complex := twiddle(k, STAGES);
         begin
-            -- Il prodotto n° butterfly/blocco * n° blocchi/stadio è costante (STAGES/2 butterfly/stadio)
             BUTTERFLIES_INST:
             for bfly_index in 0 to N_BUTTERFLIES_PER_BLOCK - 1 generate
             begin
@@ -122,13 +120,13 @@ begin
                         arst => arst,
 
                         start => butterfly_start(stage_index),
-                        done => butterfly_done(stage_index),
+                        done => butterfly_dones(stage_index)(BLOCK_OFFSET + bfly_index),
                         SF_2H_1L => SF_2H_1L(stage_index),
 
                         A => butterfly_in(stage_index)(BLOCK_OFFSET + bfly_index),
                         B => butterfly_in(stage_index)(BLOCK_OFFSET + N_BUTTERFLIES_PER_BLOCK + bfly_index),
-                        Wr => to_sfixed(W.RE, 0, 1-N),
-                        Wi => to_sfixed(W.IM, 0, 1-N),
+                        Wr => to_sfixed(W.RE, 0, 1-N, fixed_saturate, fixed_round),
+                        Wi => to_sfixed(W.IM, 0, 1-N, fixed_saturate, fixed_round),
 
                         Ap => butterfly_out(stage_index)(BLOCK_OFFSET + bfly_index),
                         Bp => butterfly_out(stage_index)(BLOCK_OFFSET + N_BUTTERFLIES_PER_BLOCK + bfly_index)
@@ -139,7 +137,7 @@ begin
             end generate;
         end generate;
         
-        butterfly_done(stage_index) <= '1' when butterfly_dones(stage_index) = (butterfly_done'range => '1') else '0';
+        butterfly_done(stage_index) <= '1' when butterfly_dones(stage_index) = (butterfly_dones(stage_index)'range => '1') else '0';
     end generate;
 
     REORDER_OUT:
