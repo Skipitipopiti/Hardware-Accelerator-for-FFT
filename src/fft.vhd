@@ -11,13 +11,12 @@ package fft_pkg is
     type fft_signal_array_t is array (natural range<>) of fft_signal_t;
     type slv_array_t is array (natural range<>) of std_logic_vector;
 
-    function next_index(current_index : natural; stages : natural) return natural;
+    function fft_shuffle(current_index : natural; stages : natural) return natural;
     function twiddle(constant k : natural; constant stages : natural) return complex;
 end package fft_pkg;
 
 package body fft_pkg is
-    function reverse_array(arr : unsigned) 
-        return unsigned is
+    function reverse_array(arr : unsigned) return unsigned is
         variable result : unsigned(arr'reverse_range);
     begin
         for i in arr'range loop
@@ -27,26 +26,22 @@ package body fft_pkg is
     end function;
 
     -- TODO: testare
-    function next_index(constant current_index : natural; constant stages : natural) return natural is
-        variable current_reversed : unsigned(stages-1 downto 0);
-        variable sum : unsigned(stages - 1 downto 0);
+    function fft_shuffle(constant current_index : natural; constant stages : natural) return natural is
+        variable index_bin : unsigned(stages - 1 downto 0);
+        variable index_rev : unsigned(stages - 1 downto 0);
     begin
         if stages = 0 then
             return 0;
+        else
+            index_bin := to_unsigned(current_index, stages);
+            index_rev := reverse_array(index_bin);
+            return to_integer(index_rev);
         end if;
-
-        current_reversed := reverse_array(to_unsigned(current_index, stages));
-        
-        -- somma 1 con reverse carry (ignora overflow)
-        sum := unsigned(current_reversed + 1);
-        sum := reverse_array(sum);
-
-        return to_integer(sum);
     end function;
 
     function twiddle(constant k : natural; constant stages : natural) return complex is
         variable W : complex;
-        variable theta : real := 2.0 * MATH_PI / real(stages) * real(k);
+        variable theta : real := 2.0 * MATH_PI * real(k) / real(stages);
     begin
         W.RE := cos(theta);
         W.IM := -sin(theta);
@@ -104,9 +99,9 @@ begin
     begin
         BLOCKS_INST:
         for blk_index in 0 to N_BLOCKS-1 generate
-            constant BLOCK_OFFSET : natural := blk_index * N_BUTTERFLIES_PER_BLOCK;
-            constant k : natural := next_index(blk_index, stage_index) * N_BUTTERFLIES_PER_BLOCK;
-            constant W : complex := twiddle(k, STAGES);
+            constant BLOCK_OFFSET : natural := blk_index * N_BUTTERFLIES_PER_BLOCK * 2;
+            constant k : natural := fft_shuffle(blk_index, stage_index) * N_BUTTERFLIES_PER_BLOCK;
+            constant W : complex := twiddle(k, 2**STAGES);
         begin
             BUTTERFLIES_INST:
             for bfly_index in 0 to N_BUTTERFLIES_PER_BLOCK - 1 generate
@@ -120,7 +115,7 @@ begin
                         arst => arst,
 
                         start => butterfly_start(stage_index),
-                        done => butterfly_dones(stage_index)(BLOCK_OFFSET + bfly_index),
+                        done => butterfly_dones(stage_index)(BLOCK_OFFSET/2 + bfly_index),
                         SF_2H_1L => SF_2H_1L(stage_index),
 
                         A => butterfly_in(stage_index)(BLOCK_OFFSET + bfly_index),
@@ -132,16 +127,16 @@ begin
                         Bp => butterfly_out(stage_index)(BLOCK_OFFSET + N_BUTTERFLIES_PER_BLOCK + bfly_index)
                     );
 
-                    butterfly_in(stage_index+1) <= butterfly_out(stage_index);
-                    butterfly_start(stage_index+1) <= butterfly_done(stage_index);
             end generate;
         end generate;
         
+        butterfly_in(stage_index+1) <= butterfly_out(stage_index);
+        butterfly_start(stage_index+1) <= butterfly_done(stage_index);
         butterfly_done(stage_index) <= '1' when butterfly_dones(stage_index) = (butterfly_dones(stage_index)'range => '1') else '0';
     end generate;
 
     REORDER_OUT:
     for i in 0 to 2**STAGES - 1 generate
-        data_out(i) <= butterfly_in(STAGES)(next_index(i, STAGES));
+        data_out(i) <= butterfly_in(STAGES)(fft_shuffle(i, STAGES));
     end generate;
 end architecture;

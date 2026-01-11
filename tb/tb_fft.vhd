@@ -22,19 +22,20 @@ architecture tb of tb_fft is
     signal data_out : fft_signal_t(0 to 2**STAGES - 1)(0 downto 1-N);
 
     constant CLK_PERIOD : time := 10 ns;
+    constant PIPE_PERIOD : time := CLK_PERIOD * 6;
     constant DELAY : time := CLK_PERIOD/10;
 
-    constant sf_0  : sfixed(0 downto 1-N) := to_sfixed(0.0, 0, 1-N);
-    constant sf_m1 : sfixed(0 downto 1-N) := to_sfixed(-1.0, sf_0);
-    constant sf_1  : sfixed(0 downto 1-N) := to_sfixed(1.0, sf_0, fixed_saturate);
+    constant sf_0  : sfixed(0 downto 1-N) := to_sfixed(0.0, 0, 1-N, fixed_saturate, fixed_round);
+    constant sf_m1 : sfixed(0 downto 1-N) := to_sfixed(-1.0, sf_0, fixed_saturate, fixed_round);
+    constant sf_1  : sfixed(0 downto 1-N) := to_sfixed(1.0, sf_0, fixed_saturate, fixed_round);
 
     -- Vettori di test
     constant x_in : fft_signal_array_t(0 to 4)(0 to 2**STAGES - 1)(0 downto 1-N) := (
         0 => (others => sf_m1),
         1 => (sf_m1, sf_0, sf_1, sf_0, sf_m1, sf_0, sf_1, sf_0, sf_m1, sf_0, sf_1, sf_0, sf_m1, sf_0, sf_1, sf_0),
         2 => (0 => sf_1, others => sf_0),
-        3 => (8 => to_sfixed(0.75, 0, 1-N), others => sf_0),
-        4 => (0 to 8 => to_sfixed(0.5, 0, 1-N), others => to_sfixed(-0.5, 0, 1-N))
+        3 => (8 => to_sfixed(0.75, 0, 1-N, fixed_saturate, fixed_round), others => sf_0),
+        4 => (0 to 8 => to_sfixed(0.5, 0, 1-N, fixed_saturate, fixed_round), others => to_sfixed(-0.5, 0, 1-N,  fixed_saturate, fixed_round))
     );
 begin
     -- Generazione del clock
@@ -69,10 +70,13 @@ begin
         -- Applica vettori di test
         wait until rising_edge(clk);
         wait for DELAY;
-        start <= '1', '0' after CLK_PERIOD;
-        data_in <= x_in(1);
 
-        wait until done = '1';
-    wait;
+        for i in x_in'range loop
+            start <= '1', '0' after CLK_PERIOD;
+            data_in <= x_in(i), (others => sf_0) after CLK_PERIOD;
+            wait for PIPE_PERIOD;
+        end loop;
+
+        wait;
     end process;
 end tb;
