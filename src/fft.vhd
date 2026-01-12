@@ -25,7 +25,7 @@ package body fft_pkg is
         return result;
     end function;
 
-    -- TODO: testare
+
     function fft_shuffle(constant current_index : natural; constant stages : natural) return natural is
         variable index_bin : unsigned(stages - 1 downto 0);
         variable index_rev : unsigned(stages - 1 downto 0);

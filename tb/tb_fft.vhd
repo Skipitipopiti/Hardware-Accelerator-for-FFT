@@ -29,13 +29,14 @@ architecture tb of tb_fft is
     constant sf_m1 : sfixed(0 downto 1-N) := to_sfixed(-1.0, sf_0, fixed_saturate, fixed_round);
     constant sf_1  : sfixed(0 downto 1-N) := to_sfixed(1.0, sf_0, fixed_saturate, fixed_round);
 
-    -- Vettori di test
-    constant x_in : fft_signal_array_t(0 to 4)(0 to 2**STAGES - 1)(0 downto 1-N) := (
-        0 => (others => sf_m1),
-        1 => (sf_m1, sf_0, sf_1, sf_0, sf_m1, sf_0, sf_1, sf_0, sf_m1, sf_0, sf_1, sf_0, sf_m1, sf_0, sf_1, sf_0),
-        2 => (0 => sf_1, others => sf_0),
-        3 => (8 => to_sfixed(0.75, 0, 1-N, fixed_saturate, fixed_round), others => sf_0),
-        4 => (0 to 8 => to_sfixed(0.5, 0, 1-N, fixed_saturate, fixed_round), others => to_sfixed(-0.5, 0, 1-N,  fixed_saturate, fixed_round))
+    -- Vettori di test (tutti reali)
+    constant x_in : fft_signal_array_t(0 to 5)(0 to 2**STAGES - 1)(0 downto 1-N) := (     
+        0 => (others => sf_m1), -- tutti -1 
+        1 => (sf_m1, sf_0, sf_1, sf_0, sf_m1, sf_0, sf_1, sf_0, sf_m1, sf_0, sf_1, sf_0, sf_m1, sf_0, sf_1, sf_0), --  -1 0 1 0-1 0 .....
+        2 => (0 => sf_1, others => sf_0), --  1 0 0 0 0....
+        3 => (sf_m1, sf_m1, sf_1, sf_1, sf_m1, sf_m1, sf_1, sf_1, sf_m1, sf_m1, sf_1, sf_1, sf_m1, sf_m1, sf_1, sf_1 ),
+        4 => (8 => to_sfixed(0.75, 0, 1-N, fixed_saturate, fixed_round), others => sf_0),-- 0 0 0 0 0 0 0.75 0 0 0 0 0 0
+        5 => (0 to 8 => to_sfixed(0.5, 0, 1-N, fixed_saturate, fixed_round), others => to_sfixed(-0.5, 0, 1-N,  fixed_saturate, fixed_round)) -- 0.5 0.5 .. -0.5 -0.5 -0.5 -0.5...
     );
 begin
     -- Generazione del clock
