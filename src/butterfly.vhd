@@ -31,7 +31,8 @@ architecture Behavioral of butterfly is
     signal r_sum_en, r_ar_en, r_ai_en : std_logic;
     signal sel_sum, sel_shift, sel_Ax, sel_Bx, sel_Wx: std_logic;
     signal sel_in_bus, sel_out_bus : std_logic_vector(0 to 2);
-    signal sel_sum_in1 : std_logic_vector(1 downto 0);
+    signal sel_d_sum : std_logic;
+    signal sel_sum_in1 : std_logic;
     signal sel_sum_in2 : std_logic;
 
 begin
@@ -54,6 +55,7 @@ begin
             sel_Wx    => sel_Wx,
             sel_in_bus  => sel_in_bus,
             sel_out_bus => sel_out_bus,
+            sel_d_sum => sel_d_sum,
             sel_sum_in1 => sel_sum_in1,
             sel_sum_in2 => sel_sum_in2,
 
@@ -84,6 +86,7 @@ begin
             sel_Wx    => sel_Wx,
             sel_in_bus  => sel_in_bus,
             sel_out_bus => sel_out_bus,
+            sel_d_sum   => sel_d_sum,
             sel_sum_in1 => sel_sum_in1,
             sel_sum_in2 => sel_sum_in2
         );

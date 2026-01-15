@@ -27,7 +27,8 @@ entity butterfly_dp is
 
         sel_in_bus  : in  std_logic_vector(0 to 2);
         sel_out_bus : in  std_logic_vector(0 to 2);
-        sel_sum_in1 : in  std_logic_vector(1 downto 0);
+        sel_d_sum : in  std_logic; --------- new--- Mux per scegliere tra doppio o somma
+        sel_sum_in1 : in  std_logic;
         sel_sum_in2 : in  std_logic;
 
         A  : in  sfixed(0 downto 1-N);
@@ -73,6 +74,7 @@ architecture Behavioral of butterfly_dp is
     signal sum_in1, sum_in2 : sfixed(HI downto LO); -- 2N + 1
     signal add_out, sub_out : sfixed(HI+1 downto LO); -- 2N + 2
     signal sum_out : sfixed(HI downto LO); -- 2N + 1
+    signal d_or_sum : sfixed(HI downto LO); -- doppio o somma
 
     signal rounder_in      : sfixed(HI downto LO);
     signal rounder_out     : sfixed(HI downto 1-N);
@@ -134,15 +136,28 @@ begin
     out_bus(2) <= rf_out(2) when sel_out_bus(2) = '0' else rf_out(3); -- 2Ar/A'r/B'i o 2Ai/A'i
     out_bus(3) <= r_sum_out; -- somme
 
+    --MUX_AX: Mux per scegliere tra Ar e Ai
+    Ax <= r_ar_out when sel_Ax = '0' else r_ai_out;
+
+    --MUX_BX: Mux per scegliere tra Br e Bi
     Br_or_Bi <= out_bus(0)(0 downto 1-N)
         when sel_Bx = '0' else out_bus(1)(0 downto 1-N);
 
-    with sel_sum_in1 select sum_in1 <=
-        resize(r_ar_out, HI, LO) when "00",
-        resize(r_ai_out, HI, LO) when "01",
-        out_bus(2)               when "10", -- 2Ar o 2Ai
-        out_bus(3)               when others; -- somme
+    --MUX_mul_in1
+    mul_in1 <= Ax when sel_shift = '1' else Br_or_Bi;
 
+    --MUX_mul_in2
+    mul_in2 <= Wr when sel_Wx = '0' else Wi;
+
+    --MUX_d_or_sum: Mux per scegliere tra doppio o somma
+    d_or_sum <= out_bus(2) when  sel_d_sum = '0' else out_bus(3); -- 02Ax , 1Somme
+    
+
+    --MUX_sum_in1
+    sum_in1 <= resize(Ax,HI,LO) when sel_sum_in1 = '0' else d_or_sum;-- 0Ax , 1Doppio/Somme
+ 
+
+    --MUX_sum_in2
     with sel_sum_in2 select sum_in2 <=
         out_bus(1) when '0', -- Bi o prodotti
         out_bus(3) when others; -- somme
@@ -166,9 +181,8 @@ begin
         end if;
     end process;
 
-    Ax <= r_ar_out when sel_Ax = '0' else r_ai_out;
-    mul_in1 <= Ax when sel_shift = '1' else Br_or_Bi;
-    mul_in2 <= Wr when sel_Wx = '0' else Wi;
+    
+
     MUL_INST: entity work.Multiplier
         generic map ( N => N )
         port map (
@@ -200,6 +214,7 @@ begin
         );
 
     -- Scartiamo il bit di overflow (il parallelismo garantisce che non si verifichi)
+    --MUX_sum_out
     sum_out <= add_out(sum_out'high downto sum_out'low) when sel_sum = '1'
         else sub_out(sum_out'high downto sum_out'low);
 

@@ -26,7 +26,8 @@ entity butterfly_command is
 
         sel_in_bus  : out std_logic_vector(0 to 2);
         sel_out_bus : out std_logic_vector(0 to 2);
-        sel_sum_in1 : out std_logic_vector(1 downto 0);
+        sel_d_sum   : out std_logic;
+        sel_sum_in1 : out std_logic;
         sel_sum_in2 : out std_logic
     );
 end entity butterfly_command;
@@ -74,8 +75,9 @@ begin
 
                 if second_half = '1' then
                     -- S4 + WiBr
-                    sel_sum <= '0'; -- somma
-                    sel_sum_in1 <= "11"; -- in1: somme
+                    sel_sum <= '0'; -- somma out
+                    sel_d_sum <= '1'; -- somma
+                    sel_sum_in1 <= '1'; -- in1: somme
                     sel_sum_in2 <= '0'; -- in2: prodotti
 
                     sel_in_bus(2) <= '0'; -- shift
@@ -94,7 +96,8 @@ begin
 
                 if second_half = '1' then
                     -- 2Ar - S2
-                    sel_sum_in1 <= "10"; -- 2Ar/2Ai
+                    sel_sum_in1 <= '1'; -- 2Ar/2Ai
+                    sel_d_sum <= '0'; -- doppio
                     sel_out_bus(2) <= '0'; -- Ar
                     sel_sum_in2 <= '1'; -- somme
 
@@ -117,7 +120,8 @@ begin
 
                 if second_half = '1' then
                     -- 2Ai - S5
-                    sel_sum_in1 <= "10"; -- 2Ar/2Ai
+                    sel_sum_in1 <= '1'; -- 2Ar/2Ai
+                    sel_d_sum <= '0'; -- doppio
                     sel_out_bus(2) <= '1'; -- Ai
                     sel_sum_in2 <= '1'; -- somme
 
@@ -135,7 +139,7 @@ begin
                     sel_Bx <= '0';
 
                     -- Ar + WrBr
-                    sel_sum_in1 <= "00"; -- Ar
+                    sel_sum_in1 <= '0'; -- Ar
                     sel_sum_in2 <= '0'; -- prodotti
 
                     sel_in_bus(1) <= '1'; -- prodotti
@@ -153,7 +157,7 @@ begin
             when "101" =>
                 if first_half = '1' then
                     -- Ai + WrBi
-                    sel_sum_in1 <= "01"; -- Ai
+                    sel_sum_in1 <= '0'; -- Ai
                     sel_sum_in2 <= '0'; -- prodotti
 
                     -- 2*Ar
@@ -191,7 +195,8 @@ begin
                     sel_Ax <= '1'; -- Ai
 
                     -- S1 - WiBi
-                    sel_sum_in1 <= "11"; -- somme
+                    sel_sum_in1 <= '1'; -- somme
+                    sel_d_sum <= '1'; -- somme
                     sel_sum_in2 <= '0'; -- prodotti
 
                     sel_in_bus(1) <= '1'; -- prodotto
