@@ -24,5 +24,4 @@ add wave -noupdate tb_butterfly/DUT/DATAPATH/*
 add wave -noupdate -divider "Control Unit"
 add wave -noupdate tb_butterfly/DUT/CONTROL_UNIT/*
 
-
-run 230 ns
+run 600 ns

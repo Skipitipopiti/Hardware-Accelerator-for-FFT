@@ -12,7 +12,6 @@ entity butterfly_command is
         second_half : in  std_logic;
         shift_half  : out std_logic;
 
-
         rf_en    : out std_logic_vector(0 to 3);
         r_sum_en : out std_logic;
         r_ar_en  : out std_logic;

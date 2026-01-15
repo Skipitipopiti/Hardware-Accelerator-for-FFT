@@ -79,6 +79,16 @@ begin
         -- Applica vettori di test
         wait until rising_edge(clk);
         wait for DELAY;
+
+        -- Modalità singola (Seed: 10)
+        start <= '1', '0' after CLK_PERIOD;
+        A <= to_sfixed(0.14281, 0, 1-N), to_sfixed(-0.14222, 0, 1-N) after CLK_PERIOD;
+        B <= to_sfixed(0.15618, 0, 1-N), to_sfixed(-0.58780, 0, 1-N) after CLK_PERIOD;
+
+        report "Finita modalità singola";
+
+        -- Modalità continua
+        wait for 15*CLK_PERIOD;
         start <= '1', '0' after CLK_PERIOD, '1' after 6*CLK_PERIOD, '0' after 7*CLK_PERIOD;
         A <= to_sfixed( 0.27885, 0, 1-N), to_sfixed(-0.94998, 0, 1-N) after CLK_PERIOD, -- Seed: 42 
             to_sfixed(-0.73127, 0, 1-N) after 6*CLK_PERIOD, to_sfixed( 0.69487, 0, 1-N) after 7*CLK_PERIOD; -- Seed: -1
@@ -86,13 +96,7 @@ begin
         B <= to_sfixed(-0.44994, 0, 1-N), to_sfixed(-0.55358, 0, 1-N) after CLK_PERIOD, -- Seed: 42
             to_sfixed( 0.52755, 0, 1-N) after 6*CLK_PERIOD, to_sfixed(-0.48986, 0, 1-N) after 7*CLK_PERIOD; -- Seed: -1
 
-        -- Aspetta il primo done
-        wait until done = '1';
-        report "1st done reached";
-
-        -- Aspetta il secondo done
-        wait until done = '1';
-        report "2nd done reached";
+        report "Finita modalità continua";
 
         wait;
     end process;

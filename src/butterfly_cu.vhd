@@ -44,6 +44,9 @@ begin
             if shift_half = '1' then
                 second_half <= first_half;
                 first_half  <= start;
+            elsif step = "000" then
+                first_half <= '1';
+                second_half <= '0';
             end if;
         end if;
     end process;
