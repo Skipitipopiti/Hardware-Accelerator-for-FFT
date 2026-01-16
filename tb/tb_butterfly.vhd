@@ -49,7 +49,7 @@ begin
     end process;
 
     -- Istanziamento DUT 
-    DUT: entity work.butterfly
+    DUT: entity work.butterfly(Microprogrammed)
         generic map ( N => N )
         port map (
             clk      => clk,

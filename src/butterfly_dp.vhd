@@ -21,8 +21,7 @@ entity butterfly_dp is
 
         sel_sum   : in  std_logic; -- '1' per somma, '0' per sottrazione
         sel_shift : in  std_logic; -- '0' per moltiplicazione, '1' per shift
-        sel_Ax    : in  std_logic;
-        sel_Bx    : in  std_logic;
+        sel_mul_in1 : in std_logic_vector(1 downto 0); -- "00": Ar, "01": Ai, "10": Br, "11": Bi
         sel_Wx    : in  std_logic;
 
         sel_in_bus  : in  std_logic_vector(0 to 2);
@@ -48,8 +47,6 @@ architecture Behavioral of butterfly_dp is
     -- Parametri del ROM rounder
     constant RR_N : natural := 3;
     constant RR_M : natural := 5;
-
-    signal Ax, Br_or_Bi : sfixed(0 downto 1-N);
 
     -- Il register file deve contenere valori con il parallelismo interno massimo
     type num_array_t is array (natural range <>) of sfixed(HI downto LO);
@@ -134,9 +131,6 @@ begin
     out_bus(2) <= rf_out(2) when sel_out_bus(2) = '0' else rf_out(3); -- 2Ar/A'r/B'i o 2Ai/A'i
     out_bus(3) <= r_sum_out; -- somme
 
-    Br_or_Bi <= out_bus(0)(0 downto 1-N)
-        when sel_Bx = '0' else out_bus(1)(0 downto 1-N);
-
     with sel_sum_in1 select sum_in1 <=
         resize(r_ar_out, HI, LO) when "00",
         resize(r_ai_out, HI, LO) when "01",
@@ -146,6 +140,14 @@ begin
     with sel_sum_in2 select sum_in2 <=
         out_bus(1) when '0', -- Bi o prodotti
         out_bus(3) when others; -- somme
+    
+    with sel_mul_in1 select mul_in1 <=
+        r_ar_out                 when "00",
+        r_ai_out                 when "01",
+        out_bus(0)(0 downto 1-N) when "10", -- Br
+        out_bus(1)(0 downto 1-N) when others; -- Bi
+
+    mul_in2 <= Wr when sel_Wx = '0' else Wi;
     
     -- Se l'algoritmo è corretto, i bit (2 downto 1) sono pari al bit di segno (bit 0)
     Ap <= out_bus(2)(0 downto 1-N);
@@ -166,9 +168,6 @@ begin
         end if;
     end process;
 
-    Ax <= r_ar_out when sel_Ax = '0' else r_ai_out;
-    mul_in1 <= Ax when sel_shift = '1' else Br_or_Bi;
-    mul_in2 <= Wr when sel_Wx = '0' else Wi;
     MUL_INST: entity work.Multiplier
         generic map ( N => N )
         port map (
@@ -179,7 +178,6 @@ begin
             PROD  => mul_out,
             Two_A => mul_shift_out
         );
-
 
     ADD_INST: entity work.Adder
         generic map ( N => 2*N+1 )

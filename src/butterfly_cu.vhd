@@ -19,14 +19,13 @@ entity butterfly_cu is
 
         sel_sum    : out std_logic; -- '0' per somma, '1 per sottrazione
         sel_shift  : out std_logic; -- '0' per moltiplicazione, '1' per shift
-        sel_Ax     : out std_logic; -- '0' per Ar, '1' per Ai
-        sel_Bx     : out std_logic; -- '0' per Br, '1' per Bi
         sel_Wx     : out std_logic; -- '0' per Wr, '1' per Wi
 
         sel_in_bus  : out std_logic_vector(0 to 2);
         sel_out_bus : out std_logic_vector(0 to 2);
         sel_sum_in1 : out std_logic_vector(1 downto 0);
-        sel_sum_in2 : out std_logic
+        sel_sum_in2 : out std_logic; 
+        sel_mul_in1 : out std_logic_vector(1 downto 0) -- "00": Ar, "01": Ai, "10": Br, "11": Bi
     );
 end entity butterfly_cu;
 
@@ -76,14 +75,13 @@ begin
 
             sel_sum     => sel_sum,
             sel_shift   => sel_shift,
-            sel_Ax      => sel_Ax,
-            sel_Bx      => sel_Bx,
             sel_Wx      => sel_Wx,
 
             sel_in_bus   => sel_in_bus,
             sel_out_bus  => sel_out_bus,
             sel_sum_in1  => sel_sum_in1,
-            sel_sum_in2  => sel_sum_in2
+            sel_sum_in2  => sel_sum_in2,
+            sel_mul_in1  => sel_mul_in1
         );
 end architecture Microprogrammed;
 
@@ -170,12 +168,13 @@ begin
         sel_sum    <= '0';
         sel_shift  <= '0';
 
-        sel_Ax     <= '0';
-        sel_Bx     <= '0';
         sel_Wx     <= '0';
 
         sel_in_bus  <= "000";
         sel_out_bus <= "000";
+        sel_sum_in1 <= "00";
+        sel_sum_in2 <= '0';
+        sel_mul_in1 <= "00";
 
         case current_state.step is
             when IDLE =>
@@ -187,7 +186,8 @@ begin
                 if current_state.first_half = '1' then
                     -- Wr x Br
                     sel_Wx <= '0'; -- Wr
-                    sel_Bx <= '0'; -- Br
+                    sel_out_bus(0) <= '0';
+                    sel_mul_in1 <= "10"; -- Br
 
                     -- input: Ai e Bi
                     r_ai_en <= '1';
@@ -211,7 +211,7 @@ begin
                 if current_state.first_half = '1' then
                     -- Bi x Wr
                     sel_Wx <= '0';
-                    sel_Bx <= '1';
+                    sel_mul_in1 <= "11"; -- Bi
                 end if;
 
                 if current_state.second_half = '1' then
@@ -231,7 +231,7 @@ begin
                 if current_state.first_half = '1' then
                     -- Bi x Wi
                     sel_Wx <= '1';
-                    sel_Bx <= '1';
+                    sel_mul_in1 <= "11"; -- Bi
 
                     sel_in_bus(1) <= '1'; -- prodotti
                     rf_en(1) <= '1'; -- WrBr
@@ -254,7 +254,7 @@ begin
                 if current_state.first_half = '1' then
                     -- Br x Wi
                     sel_Wx <= '1';
-                    sel_Bx <= '0';
+                    sel_mul_in1 <= "10"; -- Br
 
                     -- Ar + WrBr
                     sel_sum_in1 <= "00"; -- Ar
@@ -280,7 +280,7 @@ begin
 
                     -- 2*Ar
                     sel_shift <= '1';
-                    sel_Ax <= '0'; -- Ar
+                    sel_mul_in1 <= "00"; -- Ar
 
                     sel_sum <= '1'; -- somma
                     r_sum_en <= '1'; -- S1
@@ -308,7 +308,7 @@ begin
                 if current_state.first_half = '1' then
                     -- 2*Ai
                     sel_shift <= '1';
-                    sel_Ax <= '1'; -- Ai
+                    sel_mul_in1 <= "01"; -- Ai
 
                     -- S1 - WiBi
                     sel_sum_in1 <= "11"; -- somme
