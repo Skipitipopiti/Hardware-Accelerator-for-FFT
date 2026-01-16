@@ -22,4 +22,4 @@ add wave -noupdate -color yellow  tb_fft/*
 add wave -noupdate -divider "Internals"
 add wave -noupdate tb_fft/DUT/*
 
-run 1500 ns
+run 800 ns
