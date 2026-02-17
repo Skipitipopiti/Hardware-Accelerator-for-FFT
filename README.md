@@ -64,8 +64,8 @@ The error is kept below **0.125 LSB** per Butterfly unit thanks to the ROM Round
 ---
 
 ## 👥 Authors
-* **Alessandro Crisafi** - s354852
-* **Leonardo Donvito** - s347962
-* **Marco Spataro** - s354698
+* **Alessandro Crisafi** 
+* **Leonardo Donvito**
+* **Marco Spataro**
 
 *Project "Operation San Silvestro" - December 31, 2025*
